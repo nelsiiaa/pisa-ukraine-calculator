@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Перевір себе — демо</title>
+<style>
+  :root { --bg:#fafaf7; --fg:#1d1d1b; --muted:#6b6b66; --card:#fff; --line:#dedbd2; --ok:#1f7a4d; --bad:#b3392f; --acc:#2b5fb4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161615; --fg:#ecebe6; --muted:#a3a29b; --card:#20201e; --line:#3a3935; --ok:#5cc28f; --bad:#e8786d; --acc:#7aa5ee; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, sans-serif; }
+  main { max-width:680px; margin:0 auto; padding:24px 16px; }
+  .ps-card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; }
+  .ps-step, .ps-src, .ps-note { color:var(--muted); font-size:14px; }
+  .ps-todo { color:var(--bad); font-size:14px; border:1px dashed var(--bad); padding:8px; border-radius:8px; }
+  .ps-opts { display:grid; gap:8px; margin:12px 0; }
+  .ps-opt { text-align:left; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; font:inherit; cursor:pointer; }
+  .ps-opt:disabled { cursor:default; }
+  .ps-right { border-color:var(--ok); outline:2px solid var(--ok); }
+  .ps-wrong { border-color:var(--bad); outline:2px solid var(--bad); }
+  .ps-next { padding:10px 16px; border:0; border-radius:8px; background:var(--acc); color:#fff; font:inherit; cursor:pointer; }
+  .ps-link { background:var(--card); border-left:4px solid var(--acc); padding:12px 16px; }
+  .demo-only { margin-top:32px; padding:16px; border:1px dashed var(--line); border-radius:12px; }
+  select, button { font:inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Калькулятор PISA: Україна</h1>
+  <section id="perevir-sebe"></section>
+  <section id="calc" hidden>
+    <div class="demo-only">
+      <p><strong>Лише для демо:</strong> тут буде калькулятор (частина 1). Імітація вибору, щоб перевірити речення-повернення до тесту.</p>
+      <select id="s"><option value="read">читання</option><option value="math">математика</option><option value="scie">природничі науки</option></select>
+      <select id="g"><option value="female">дівчина</option><option value="male">хлопець</option></select>
+      <select id="e"><option value="low">нижчий</option><option value="mid">середній</option><option value="high">вищий</option></select>
+      <button id="show" type="button">Показати</button>
+    </div>
+    <div id="perevir-link"></div>
+  </section>
+</main>
+<script src="perevir-sebe.js"></script>
+<script>
+  PerevirSebe.start({ mount: "#perevir-sebe", onDone: function () {
+    document.getElementById("perevir-sebe").hidden = true;
+    document.getElementById("calc").hidden = false;
+  }});
+  var rows = [];
+  // На сайті: data/pisa_ukraine_calculator.csv. Для демо — перерахована таблиця з тими самими назвами полів.
+  fetch("data/demo_level2.csv").then(function (r) { return r.text(); })
+    .then(function (t) { rows = PerevirSebe.parseCsv(t); });
+  document.getElementById("show").addEventListener("click", function () {
+    PerevirSebe.showLink({ mount: "#perevir-link", rows: rows,
+      subject: s.value, gender: g.value, escs: e.value });
+  });
+</script>
+</body>
+</html>

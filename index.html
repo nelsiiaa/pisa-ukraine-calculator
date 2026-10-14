@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Калькулятор PISA: Україна</title>
+  <meta name="description" content="Яка частка українських 15-річних досягає базового рівня знань залежно від статі та становища родини. Дані PISA 2025.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="hero">
+    <p class="eyebrow">PISA 2025 · 15-річні в Україні</p>
+    <h1>Чи залежить освіта від того, хто ти?</h1>
+    <p class="lede">Спершу спробуй три завдання базового рівня PISA. Потім обери предмет, стать і становище родини, і калькулятор покаже, яка частка українських 15-річних із такими ознаками досягає цього рівня.</p>
+  </header>
+
+  <!-- Частина 2: «Перевір себе» -->
+  <section id="quiz" class="quiz" aria-live="polite">
+    <p class="note" id="quiz-disclaimer"></p>
+    <div id="quiz-body"></div>
+    <button type="button" id="quiz-skip" class="link-btn">Пропустити завдання й перейти до калькулятора</button>
+  </section>
+
+  <!-- Частина 1: форма калькулятора -->
+  <form id="calc-form" class="card form" novalidate hidden>
+    <fieldset>
+      <legend>Предмет</legend>
+      <div class="chips">
+        <label><input type="radio" name="subject" value="read"><span>Читання</span></label>
+        <label><input type="radio" name="subject" value="math"><span>Математика</span></label>
+        <label><input type="radio" name="subject" value="scie"><span>Природничі науки</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Стать</legend>
+      <div class="chips">
+        <label><input type="radio" name="gender" value="female"><span>Дівчина</span></label>
+        <label><input type="radio" name="gender" value="male"><span>Хлопець</span></label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Соціально-економічне становище родини</legend>
+      <div class="chips">
+        <label><input type="radio" name="escs" value="low"><span>Нижче</span></label>
+        <label><input type="radio" name="escs" value="mid"><span>Середнє</span></label>
+        <label><input type="radio" name="escs" value="high"><span>Вище</span></label>
+      </div>
+      <p class="hint">Враховує достаток, освіту й професію батьків. Якщо не впевнені, оберіть «Середнє».</p>
+    </fieldset>
+    <button type="submit" id="show-btn" class="btn primary" disabled>Показати</button>
+    <p class="hint" id="form-hint">Оберіть усі три пункти, щоб побачити результат.</p>
+  </form>
+
+  <!-- Результат -->
+  <section id="result" class="result" hidden aria-live="polite">
+    <div class="card main-result">
+      <p class="eyebrow" id="res-group"></p>
+      <p class="big"><span id="res-pct"></span><span class="range" id="res-range"></span></p>
+      <p id="res-sentence" class="sentence"></p>
+      <div class="scale" aria-hidden="true">
+        <div class="track" id="scale-track"></div>
+        <div class="ticks"><span>0%</span><span>50%</span><span>100%</span></div>
+      </div>
+      <ul class="legend" id="scale-legend"></ul>
+      <p id="res-diff" class="diff"></p>
+      <p id="quiz-link" class="quiz-link" hidden></p>
+    </div>
+
+    <!-- Частина 3 -->
+    <section class="card block">
+      <h2>Що це означає</h2>
+      <p id="meaning-text"></p>
+    </section>
+
+    <!-- Частина 5 -->
+    <section class="card block">
+      <h2>Наскільки великий розрив</h2>
+      <div id="years" class="years"></div>
+    </section>
+
+    <!-- Частина 4 -->
+    <section class="card block">
+      <h2>Що з цим робити</h2>
+      <p id="solutions-note" class="hint" hidden></p>
+      <div id="solutions" class="solutions"></div>
+    </section>
+
+    <section class="card block limits">
+      <h2>Обмеження</h2>
+      <ul>
+        <li>Це середнє для групи учнів, а не прогноз для конкретної людини.</li>
+        <li>Дані охоплюють 17 з 27 регіонів України; окупованих і частини прифронтових територій у вибірці немає.</li>
+        <li>Лише 15-річні школярі, дані одного 2025 року.</li>
+        <li>Дані показують зв'язок, а не причину.</li>
+      </ul>
+    </section>
+
+    <div class="actions">
+      <button type="button" id="again-btn" class="btn">Спробувати іншу комбінацію</button>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Дані: OECD, PISA 2025, мікродані учнівської анкети. Україна: 7 105 учнів у 294 школах. Частки пораховано з вагами учнів, 10 правдоподібними значеннями та 80 реплікаційними вагами; діапазон — 95% довірчий інтервал. Базовий рівень — рівень 2 PISA.</p>
+    <p id="license"></p>
+  </footer>
+</main>
+<script src="js/common.js"></script>
+<script src="js/texts.js"></script>
+<script src="js/interpretation.js"></script>
+<script src="js/solutions.js"></script>
+<script src="js/years.js"></script>
+<script src="js/quiz.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

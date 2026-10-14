@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тестова сторінка: кнопки «Поділитися»</title>
+<style>
+  :root { --ink:#142033; --muted:#5B6B80; --bg:#EEF2F7; --panel:#fff; --teal:#0E8A7D; --blue:#34508C; --line:#DDE4EE; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; line-height:1.5; }
+  main { max-width:560px; margin:0 auto; padding:16px; }
+  .banner { background:#FFF4D6; border:1px solid #F0D58A; padding:10px 14px; border-radius:10px; font-size:14px; margin-bottom:16px; }
+  .panel { background:var(--panel); border-radius:16px; padding:20px; margin-bottom:16px; }
+  h1 { font-size:26px; margin:0 0 4px; }
+  fieldset { border:0; padding:0; margin:14px 0 0; }
+  legend { font-weight:600; margin-bottom:6px; }
+  label { display:inline-block; margin:0 14px 6px 0; }
+  button { font:inherit; border:0; border-radius:12px; padding:12px 18px; cursor:pointer; }
+  button:focus-visible { outline:3px solid var(--blue); outline-offset:2px; }
+  #btn-show { background:var(--ink); color:#fff; margin-top:14px; }
+  #result { display:none; }
+  .big { font-size:88px; font-weight:800; color:var(--teal); line-height:1; }
+  .range { color:var(--muted); }
+  .scale-row { margin-top:12px; }
+  .scale-row .top { display:flex; justify-content:space-between; font-size:15px; }
+  .track { height:12px; background:var(--line); border-radius:6px; overflow:hidden; margin-top:4px; }
+  .fill { height:100%; border-radius:6px; }
+  .share { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+  #btn-link, #btn-image { background:#E3ECF7; color:var(--ink); font-weight:600; flex:1 1 200px; }
+  #share-status { min-height:1.4em; margin-top:10px; font-size:15px; color:var(--teal); }
+  #share-status[data-error="true"] { color:#B3261E; }
+</style>
+</head>
+<body>
+<main>
+  <div class="banner"><b>Тестова заглушка.</b> Цифри нижче вигадані й потрібні лише для перевірки кнопок. Справжній калькулятор зробить команда.</div>
+
+  <div class="panel">
+    <h1>Чи залежить освіта від того, хто ти?</h1>
+    <div class="range">Дані PISA 2025 про 15-річних в Україні</div>
+
+    <fieldset>
+      <legend>Предмет</legend>
+      <label><input type="radio" name="subject" value="reading" checked> Читання</label>
+      <label><input type="radio" name="subject" value="math"> Математика</label>
+      <label><input type="radio" name="subject" value="science"> Природничі науки</label>
+    </fieldset>
+    <fieldset>
+      <legend>Стать</legend>
+      <label><input type="radio" name="sex" value="girl" checked> Дівчина</label>
+      <label><input type="radio" name="sex" value="boy"> Хлопець</label>
+    </fieldset>
+    <fieldset>
+      <legend>Достаток родини</legend>
+      <label><input type="radio" name="income" value="low"> Нижчий</label>
+      <label><input type="radio" name="income" value="mid" checked> Середній</label>
+      <label><input type="radio" name="income" value="high"> Вищий</label>
+    </fieldset>
+    <button id="btn-show" type="button">Показати</button>
+  </div>
+
+  <div class="panel" id="result" aria-live="polite">
+    <div class="big" id="out-percent"></div>
+    <div id="out-caption">учнів із такими ознаками досягають базового рівня</div>
+    <div class="range" id="out-range"></div>
+    <div id="out-scale"></div>
+    <h2 style="font-size:20px;margin:20px 0 4px">Що це означає</h2>
+    <p id="out-meaning" style="margin:0"></p>
+
+    <!-- ===== ДВІ КНОПКИ, ЯКІ ПІДКЛЮЧАЄ share.js ===== -->
+    <div class="share">
+      <button id="btn-link" type="button">Скопіювати посилання</button>
+      <button id="btn-image" type="button">Зберегти картинку</button>
+    </div>
+    <div id="share-status" role="status"></div>
+  </div>
+</main>
+
+<script src="share.js"></script>
+<script>
+  // ===== ЗАГЛУШКА КАЛЬКУЛЯТОРА (вигадані цифри, лише для тесту) =====
+  var base = { reading: 55, math: 52, science: 58 };
+  var subjectNames = { reading: "читання", math: "математики", science: "природничих наук" };
+  var current = null; // останній показаний результат
+
+  function readForm() {
+    function val(name) { return document.querySelector('input[name="' + name + '"]:checked').value; }
+    return { subject: val("subject"), sex: val("sex"), income: val("income") };
+  }
+  function setForm(state) {
+    Object.keys(state).forEach(function (name) {
+      document.querySelector('input[name="' + name + '"][value="' + state[name] + '"]').checked = true;
+    });
+  }
+
+  function calculate(state) {
+    var p = base[state.subject];
+    if (state.sex === "girl" && state.subject === "reading") p += 8;
+    if (state.sex === "boy" && state.subject === "reading") p -= 8;
+    if (state.sex === "boy" && state.subject === "math") p += 3;
+    p += { low: -14, mid: 0, high: 12 }[state.income];
+    return {
+      subject: state.subject, sex: state.sex, income: state.income,
+      percent: p, low: p - 4, high: p + 4,
+      ukraine: base[state.subject], oecd: base[state.subject] + 13,
+      meaning: "Це тестовий текст-пояснення. Приблизно " + p + " із 100 учнів із такими ознаками досягають базового рівня з " +
+        subjectNames[state.subject] + ". Це середнє для групи, тому воно не передбачає результат конкретної людини, а показує, де в даних помітний розрив."
+    };
+  }
+
+  function show(state) {
+    current = calculate(state);
+    document.getElementById("result").style.display = "block";
+    document.getElementById("out-percent").textContent = current.percent + "%";
+    document.getElementById("out-range").textContent = "можливий діапазон " + current.low + "–" + current.high + "%";
+    document.getElementById("out-meaning").textContent = current.meaning;
+    var rows = [["Твоя група", current.percent, "var(--teal)"], ["Усі учні України", current.ukraine, "var(--blue)"], ["Середнє по країнах ОЕСР", current.oecd, "#9AA7B8"]];
+    document.getElementById("out-scale").innerHTML = rows.map(function (r) {
+      return '<div class="scale-row"><div class="top"><span>' + r[0] + '</span><b>' + r[1] + '%</b></div>' +
+             '<div class="track"><div class="fill" style="width:' + r[1] + '%;background:' + r[2] + '"></div></div></div>';
+    }).join("");
+  }
+
+  document.getElementById("btn-show").addEventListener("click", function () { show(readForm()); });
+
+  // ===== ПІДКЛЮЧЕННЯ share.js (саме ці рядки потрібно повторити в справжньому сайті) =====
+  PisaShare.init({
+    linkButton: "#btn-link",
+    imageButton: "#btn-image",
+    statusEl: "#share-status",
+    // 1) Віддаємо модулю те, що зараз показано на екрані. Якщо нічого не показано, віддаємо null.
+    getResult: function () { return current; },
+    // 2) Якщо сторінку відкрили за чужим посиланням: підставляємо вибір у форму й показуємо результат.
+    onLoadFromLink: function (state) { setForm(state); show(state); }
+  });
+</script>
+</body>
+</html>
