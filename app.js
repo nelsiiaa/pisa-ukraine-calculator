@@ -93,26 +93,54 @@
     } }));
   }
 
-  // ---------- Частина 3
-  function renderMeaning(row) {
-    $('meaning-text').textContent = window.PisaInterpretation.buildInterpretation(row).text;
+  // ---------- Частина 3: визначення з іконкою · 100 крапок · статус · застереження
+  const I = window.PisaIcons;
+  function renderMeaning(row, subject) {
+    const res = window.PisaInterpretation.buildInterpretation(row);
+    const box = $('meaning-text');
+    if (!['above', 'about', 'below'].includes(res.situation)) {
+      box.innerHTML = res.sentences.length ? `<p class="caution">${I.info}<span>${res.text}</span></p>` : '';
+      return;
+    }
+    const n = int(row.pct_level2), M = T.INTERPRETATION;
+    const dots = Array.from({ length: 100 }, (_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('');
+    box.innerHTML = `
+      <div class="mean-def"><span class="icon-badge">${I[subject]}</span>
+        <div><p class="mini">${M.DEF_LABEL}</p><p>${res.sentences[0]}</p></div></div>
+      <div class="mean-group">
+        <div class="dots" role="img" aria-label="${fill(M.DOTS_ARIA, { n })}">${dots}</div>
+        <div class="mean-side">
+          <p class="dots-cap">${fill(M.DOTS_CAPTION, { n: `<b>${n}</b>` })}</p>
+          <span class="status st-${res.situation}">${M.STATUS[res.situation]}</span>
+          <p>${res.sentences[1]}</p>
+        </div>
+      </div>
+      <p class="caution">${I.info}<span>${res.sentences[2]}</span></p>`;
   }
 
-  // ---------- Частина 4
+  // ---------- Частина 4: картки з іконкою, причиною й адресатами
   function renderSolutions(row) {
-    const res = window.PisaSolutions.buildSolutions(row);
+    const res = window.PisaSolutions.buildSolutions(row), S = T.SOLUTIONS;
     $('solutions-note').hidden = !res.note;
     $('solutions-note').textContent = res.note;
     $('solutions').innerHTML = res.directions.map(id => {
       const d = T.DIRECTIONS[id];
-      const audience = T.SOLUTIONS.AUDIENCE_PREFIX + d.audience.map(a => T.AUDIENCE[a]).join(', ');
       let source = '';
       if (d.source_title && d.source_url) {
-        source = `<p class="src"><a href="${d.source_url}" target="_blank" rel="noopener">${fill(T.SOLUTIONS.SOURCE, { source_title: d.source_title, source_location: d.source_location || '' })}</a></p>`;
+        source = `<p class="src"><a href="${d.source_url}" target="_blank" rel="noopener">${fill(S.SOURCE, { source_title: d.source_title, source_location: d.source_location || '' })}</a></p>`;
       } else if (DEBUG) {
         source = '<p class="src todo">SOURCE_TODO</p>';
       }
-      return `<article class="solution"><h3>${d.title}</h3><p>${d.text}</p><p class="aud">${audience}</p>${source}</article>`;
+      const aud = d.audience.map(a => `<li class="aud-${a}">${T.AUDIENCE[a]}</li>`).join('');
+      return `<article class="solution">
+          <header class="sol-head">
+            <span class="icon-badge">${I[S.ICON[id]] || ''}</span>
+            <div><p class="sol-why">${S.REASON[id] || ''}</p><h3>${d.title}</h3></div>
+          </header>
+          <p>${d.text}</p>
+          <ul class="aud" aria-label="${S.AUDIENCE_PREFIX.replace(':', '').trim()}">${aud}</ul>
+          ${source}
+        </article>`;
     }).join('');
   }
 
@@ -132,7 +160,7 @@
     if (!row) return;
     form.hidden = true;
     renderMain(subject, gender, escs, row);
-    renderMeaning(row);
+    renderMeaning(row, subject);
     renderYears(subject, gender, escs);
     renderSolutions(row);
     const link = $('quiz-link');

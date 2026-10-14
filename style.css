@@ -12,6 +12,7 @@
   --oecd: #6b7480;        /* середнє ОЕСР */
   --track: #e7ebf1;
   --right: #0f7b3e; --right-bg: #e3f4ea;
+  --warn: #a35a00; --warn-bg: #fdf0dc;
   --wrong: #b3261e; --wrong-bg: #fbe7e5;
   --display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -20,7 +21,7 @@
   :root {
     --bg: #10141b; --surface: #181e28; --ink: #eef1f6; --ink-2: #b8c0cc; --ink-3: #8b95a5;
     --line: #2a3240; --accent: #7b93ff; --accent-ink: #0b1020; --accent-soft: #1f2846; --ukraine: #f0b030; --oecd: #9aa3b0;
-    --track: #252d3a; --right: #6fd49a; --right-bg: #173426; --wrong: #ff8a80; --wrong-bg: #3a1c1a;
+    --track: #252d3a; --warn: #f5b25a; --warn-bg: #3a2a14; --right: #6fd49a; --right-bg: #173426; --wrong: #ff8a80; --wrong-bg: #3a1c1a;
   }
 }
 
@@ -128,9 +129,45 @@ legend { font-weight: 600; margin-bottom: 10px; padding: 0; }
 .block { display: flex; flex-direction: column; gap: 12px; }
 .years { display: flex; flex-direction: column; gap: 14px; }
 .gap { display: flex; flex-direction: column; gap: 4px; }
+/* ---------- Частина 3: «Що це означає» ---------- */
+.meaning { display: flex; flex-direction: column; gap: 16px; }
+.icon-badge { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+.mini { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 2px; }
+.mean-def { display: flex; gap: 14px; align-items: flex-start; }
+.mean-group { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; padding: 16px; border-radius: 12px; background: var(--bg); }
+.dots { display: grid; grid-template-columns: repeat(10, 12px); gap: 4px; }
+.dots i { width: 12px; height: 12px; border-radius: 50%; background: var(--track); box-shadow: inset 0 0 0 1px var(--line); }
+.dots i.on { background: var(--accent); box-shadow: none; }
+.mean-side { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.dots-cap { font-size: 15px; color: var(--ink-2); }
+.dots-cap b { font-family: var(--display); font-size: 30px; color: var(--accent); margin-right: 4px; }
+.status { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; padding: 5px 12px; border-radius: 999px; }
+.status::before { font-weight: 700; }
+.st-above { background: var(--accent-soft); color: var(--accent); }
+.st-above::before { content: "↑"; }
+.st-about { background: var(--track); color: var(--ink-2); }
+.st-about::before { content: "≈"; }
+.st-below { background: var(--warn-bg); color: var(--warn); }
+.st-below::before { content: "↓"; }
+.caution { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--ink-2); padding: 12px 14px; border-radius: 10px; border: 1px dashed var(--line); }
+.caution svg { flex: none; width: 20px; height: 20px; color: var(--ink-3); margin-top: 1px; }
+@media (max-width: 480px) {
+  .mean-group { grid-template-columns: 1fr; justify-items: start; }
+}
+
+/* ---------- Частина 4: «Що з цим робити» ---------- */
 .solutions { display: flex; flex-direction: column; gap: 12px; }
-.solution { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 10px; background: var(--bg); }
-.solution .aud { font-size: 14px; color: var(--ink-3); }
+.solution { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 12px; background: var(--bg); }
+.sol-head { display: flex; gap: 12px; align-items: center; }
+.sol-head h3 { font-size: 17px; }
+.sol-why { font-size: 13px; font-weight: 600; color: var(--accent); }
+.aud { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.aud li { font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); }
+.aud li::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.aud-student::before { background: var(--accent); }
+.aud-parents::before { background: var(--ukraine); }
+.aud-school::before { background: var(--oecd); }
+.aud-state::before { background: var(--warn); }
 .solution .src { font-size: 13px; }
 .solution .todo { color: var(--wrong); font-family: ui-monospace, Menlo, monospace; }
 .limits ul { margin: 0; padding-left: 20px; color: var(--ink-2); display: flex; flex-direction: column; gap: 4px; }
