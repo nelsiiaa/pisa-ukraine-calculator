@@ -39,18 +39,18 @@
     <fieldset>
       <legend>Стать</legend>
       <div class="chips">
-        <label><input type="radio" name="gender" value="female"><span>Дівчина</span></label>
-        <label><input type="radio" name="gender" value="male"><span>Хлопець</span></label>
+        <label><input type="radio" name="gender" value="female"><span>Дівчата</span></label>
+        <label><input type="radio" name="gender" value="male"><span>Хлопці</span></label>
       </div>
     </fieldset>
     <fieldset>
-      <legend>Соціально-економічне становище родини</legend>
-      <div class="chips">
-        <label><input type="radio" name="escs" value="low"><span>Нижче</span></label>
-        <label><input type="radio" name="escs" value="mid"><span>Середнє</span></label>
-        <label><input type="radio" name="escs" value="high"><span>Вище</span></label>
+      <legend>Достаток родини</legend>
+      <p class="hint" id="escs-hint"></p>
+      <div class="chips" aria-describedby="escs-hint">
+        <label><input type="radio" name="escs" value="low"><span>Нижчий</span></label>
+        <label><input type="radio" name="escs" value="mid"><span>Середній</span></label>
+        <label><input type="radio" name="escs" value="high"><span>Вищий</span></label>
       </div>
-      <p class="hint">Враховує достаток, освіту й професію батьків. Якщо не впевнені, оберіть «Середнє».</p>
     </fieldset>
     <button type="submit" id="show-btn" class="btn primary" disabled>Показати</button>
     <p class="hint" id="form-hint">Оберіть усі три пункти, щоб побачити результат.</p>
@@ -59,16 +59,27 @@
   <!-- Результат -->
   <section id="result" class="result" hidden aria-live="polite">
     <div class="card main-result">
-      <p class="eyebrow" id="res-group"></p>
+      <p class="eyebrow" id="res-subject"></p>
       <p class="big"><span id="res-pct"></span><span class="range" id="res-range"></span></p>
       <p id="res-sentence" class="sentence"></p>
-      <div class="scale" aria-hidden="true">
-        <div class="track" id="scale-track"></div>
-        <div class="ticks"><span>0%</span><span>50%</span><span>100%</span></div>
-      </div>
-      <ul class="legend" id="scale-legend"></ul>
+
+      <figure class="scale" id="scale">
+        <figcaption class="hint" id="scale-caption"></figcaption>
+        <div class="scale-plot" aria-hidden="true">
+          <div class="lanes lanes-top" id="lanes-top"></div>
+          <div class="track" id="scale-track"></div>
+          <div class="ticks"><span>0%</span><span>50%</span><span>100%</span></div>
+          <div class="lanes lanes-bottom" id="lanes-bottom"></div>
+        </div>
+        <table class="sr-only" id="scale-table">
+          <caption>Порівняння часток</caption>
+          <tbody></tbody>
+        </table>
+      </figure>
+
       <p id="res-diff" class="diff"></p>
       <p id="quiz-link" class="quiz-link" hidden></p>
+      <p class="data-note" id="data-note"></p>
     </div>
 
     <!-- Частина 3 -->
@@ -116,6 +127,7 @@
 <script src="js/solutions.js"></script>
 <script src="js/years.js"></script>
 <script src="js/quiz.js"></script>
+<script src="js/calculator.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
