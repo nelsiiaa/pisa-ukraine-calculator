@@ -47,11 +47,19 @@
     muted: "#5B6B80",
     track: "#DDE4EE",
     colors: { group: "#0E8A7D", ukraine: "#34508C", oecd: "#9AA7B8" },
-    maxMeaningLines: 7
+    maxMeaningLines: 8
   };
+
+  // Текст, який іде разом із посиланням (його можна змінити в init: shareText)
+  var DEFAULT_SHARE_TEXT = "Ось подивись на мої результати, а які вийдуть у тебе?";
 
   var config = {};
   var statusTimer = null;
+
+  // Повне повідомлення: текст, а з нового рядка активне посилання
+  function shareMessage(link) {
+    return (config.shareText || DEFAULT_SHARE_TEXT) + "\n" + link;
+  }
 
   // Формат цифри: за замовчуванням ціле число. Щоб збігалося з сайтом, у init можна
   // передати decimals: 1, тоді буде «54,6».
@@ -117,13 +125,16 @@
     var result = getResultOrWarn();
     if (!result) return;
     var link = buildLink(result);
-    copyText(link).then(
+    // За замовчуванням копіюємо текст разом із посиланням, щоб воно не було «голим».
+    // Якщо потрібне лише посилання, у init передайте copyWithText: false.
+    var toCopy = config.copyWithText === false ? link : shareMessage(link);
+    copyText(toCopy).then(
       function () {
-        setStatus("Посилання скопійовано. Надішліть його друзям.");
+        setStatus("Скопійовано. Вставте в чат: це текст із посиланням.");
       },
       function () {
-        // Якщо браузер не дав копіювати, показуємо посилання, щоб його можна було взяти вручну
-        window.prompt("Скопіюйте посилання:", link);
+        // Якщо браузер не дав копіювати, показуємо текст, щоб його можна було взяти вручну
+        window.prompt("Скопіюйте текст із посиланням:", toCopy);
       }
     );
   }
@@ -156,12 +167,6 @@
     ctx.arcTo(x, y + h, x, y, r);
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
-  }
-
-  function siteLabel() {
-    if (config.siteLabel) return config.siteLabel;
-    if (window.location.protocol === "file:") return "(адреса сайту з'явиться після публікації)";
-    return window.location.host + window.location.pathname.replace(/index\.html$/, "").replace(/\/$/, "");
   }
 
   function drawCard(result) {
@@ -202,31 +207,31 @@
     // Вибрані ознаки: три «таблетки»
     y += 10;
     var chips = [ALLOWED.subject[result.subject], ALLOWED.gender[result.gender], ALLOWED.escs[result.escs]];
-    ctx.font = "600 34px " + CARD.font;
+    ctx.font = "600 30px " + CARD.font;
     var cx = x;
     var cy = y;
     chips.forEach(function (label) {
-      var w = ctx.measureText(label).width + 56;
+      var w = ctx.measureText(label).width + 44;
       if (cx + w > x + contentW) {
         cx = x;
-        cy += 82;
+        cy += 76;
       }
       ctx.fillStyle = "#E3ECF7";
-      roundRect(ctx, cx, cy, w, 64, 32);
+      roundRect(ctx, cx, cy, w, 60, 30);
       ctx.fill();
       ctx.fillStyle = CARD.ink;
-      ctx.fillText(label, cx + 28, cy + 44);
-      cx += w + 16;
+      ctx.fillText(label, cx + 22, cy + 41);
+      cx += w + 14;
     });
-    y = cy + 64;
+    y = cy + 60;
 
     // Велика цифра
-    y += 270;
+    y += 255;
     ctx.fillStyle = CARD.colors.group;
-    ctx.font = "800 300px " + CARD.font;
+    ctx.font = "800 290px " + CARD.font;
     ctx.fillText(fmt(result.percent) + "%", x - 6, y);
 
-    y += 92;
+    y += 82;
     ctx.fillStyle = CARD.ink;
     ctx.font = "600 42px " + CARD.font;
     wrapText(ctx, "учнів із такими ознаками досягають базового рівня", contentW).forEach(function (line) {
@@ -241,7 +246,7 @@
     }
 
     // Шкала порівняння
-    y += 50;
+    y += 40;
     var bench = BENCHMARKS[result.subject] || {};
     var ukraineValue = typeof result.ukraine === "number" ? result.ukraine : bench.ukraine;
     var oecdValue = typeof result.oecd === "number" ? result.oecd : bench.oecd;
@@ -269,7 +274,7 @@
       ctx.fillStyle = row.color;
       roundRect(ctx, x, barY, fillW, 26, 13);
       ctx.fill();
-      y += 100;
+      y += 92;
     });
 
     // Що це означає
@@ -279,11 +284,11 @@
     ctx.fillText("Що це означає", x, y);
     y += 20;
     ctx.fillStyle = CARD.muted;
-    ctx.font = "400 34px " + CARD.font;
+    ctx.font = "400 32px " + CARD.font;
     var lines = wrapText(ctx, result.meaning || "", contentW);
     // Скільки рядків реально вміщається над нижнім підписом (кожен рядок займає 48 px)
-    var spaceLeft = H - 235 - y;
-    var maxLines = Math.min(CARD.maxMeaningLines, Math.max(2, Math.floor(spaceLeft / 48)));
+    var spaceLeft = H - 185 - y;
+    var maxLines = Math.min(CARD.maxMeaningLines, Math.max(2, Math.floor(spaceLeft / 44)));
     if (lines.length > maxLines) {
       lines = lines.slice(0, maxLines);
       var last = lines[lines.length - 1].replace(/[\s.,;:]*$/, "");
@@ -294,17 +299,14 @@
       lines[lines.length - 1] = last + "…";
     }
     lines.forEach(function (line) {
-      y += 48;
+      y += 44;
       ctx.fillText(line, x, y);
     });
 
-    // Низ картинки: застереження й адреса сайту
+    // Низ картинки: застереження (адреси сайту на картинці немає, посилання йде в тексті повідомлення)
     ctx.fillStyle = CARD.muted;
     ctx.font = "400 28px " + CARD.font;
-    ctx.fillText("Це середнє для групи учнів, а не прогноз для конкретної людини.", x, H - 190);
-    ctx.fillStyle = CARD.ink;
-    ctx.font = "700 36px " + CARD.font;
-    ctx.fillText(siteLabel(), x, H - 130);
+    ctx.fillText("Це середнє для групи учнів, а не прогноз для конкретної людини.", x, H - 130);
 
     return canvas;
   }
@@ -330,6 +332,20 @@
     }, 2000);
   }
 
+  // Запасний варіант (комп'ютер або браузер без меню «Поділитися»):
+  // завантажуємо картинку і копіюємо текст із посиланням, щоб вставити їх разом
+  function saveAndCopy(blob, fileName, result) {
+    downloadBlob(blob, fileName);
+    copyText(shareMessage(buildLink(result))).then(
+      function () {
+        setStatus("Картинку завантажено, а текст із посиланням скопійовано. Надішліть їх разом в одному повідомленні.");
+      },
+      function () {
+        setStatus("Картинку завантажено. Посилання скопіюйте кнопкою «Скопіювати посилання».");
+      }
+    );
+  }
+
   function onImageClick() {
     var result = getResultOrWarn();
     if (!result) return;
@@ -347,7 +363,8 @@
         // Меню «Поділитися» з картинкою є на більшості телефонів
         if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
           return navigator
-            .share({ files: [file], title: "Калькулятор PISA: Україна", text: buildLink(result) })
+            // Текст і посилання йдуть одним рядком тексту: у Telegram це підпис до картинки з активним посиланням
+            .share({ files: [file], title: "Калькулятор PISA: Україна", text: shareMessage(buildLink(result)) })
             .then(function () {
               setStatus("Готово.");
             })
@@ -356,13 +373,11 @@
               if (err && err.name === "AbortError") {
                 setStatus("");
               } else {
-                downloadBlob(blob, fileName);
-                setStatus("Картинку завантажено у файли.");
+                saveAndCopy(blob, fileName, result);
               }
             });
         }
-        downloadBlob(blob, fileName);
-        setStatus("Картинку завантажено.");
+        saveAndCopy(blob, fileName, result);
       })
       .catch(function () {
         setStatus("Не вдалося створити картинку. Спробуйте ще раз.", true);

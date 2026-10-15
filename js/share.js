@@ -1,6 +1,6 @@
 /*
  * Частина 6. «Поділитися»: посилання з обраною комбінацією і картка-картинка 1080×1920 (сторіс).
- * Основа — share.js учасниці команди (оригінал, версія 2: docs/team/part6/share.js). Узгоджено з рештою сайту:
+ * Основа — share.js учасниці команди (оригінал, версія 3: docs/team/part6/share.js). Узгоджено з рештою сайту:
  *   - параметри посилання такі самі, як у таблиці даних: ?subject=read&gender=female&escs=low[&track=grade9];
  *   - підписи з js/texts.js (SHARE, CALC), кольори й шрифти — як на сайті;
  *   - на картці та сама шкала (коло / ромб / квадрат), формат «39% (35–44%)» і текст «Що це означає», що й на сторінці.
@@ -81,13 +81,19 @@
     });
   }
 
+  // Повне повідомлення (версія 3 учасниці): текст, а з нового рядка активне посилання.
+  function shareMessage(link) {
+    return (config.shareText || T.SHARE.share_text) + '\n' + link;
+  }
+
   function onLinkClick() {
     const result = getResultOrWarn();
     if (!result) return;
-    const link = buildLink(result);
-    copyText(link).then(
+    // За замовчуванням копіюємо текст разом із посиланням; лише посилання — init({ copyWithText: false }).
+    const toCopy = config.copyWithText === false ? buildLink(result) : shareMessage(buildLink(result));
+    copyText(toCopy).then(
       () => setStatus(T.SHARE.link_copied),
-      () => window.prompt(T.SHARE.link_prompt, link) // якщо браузер не дав копіювати — показуємо посилання
+      () => window.prompt(T.SHARE.link_prompt, toCopy) // якщо браузер не дав копіювати — показуємо текст
     );
   }
 
@@ -128,12 +134,6 @@
     ctx.fill();
     if (ring) { ctx.lineWidth = ring; ctx.strokeStyle = CARD.panel; ctx.stroke(); }
     ctx.restore();
-  }
-
-  function siteLabel() {
-    if (config.siteLabel) return config.siteLabel;
-    if (window.location.protocol === 'file:') return T.SHARE.card_local_site;
-    return window.location.host + window.location.pathname.replace(/index\.html$/, '').replace(/\/$/, '');
   }
 
   function drawCard(r) {
@@ -238,7 +238,7 @@
     y += 10;
     ctx.fillStyle = CARD.ink2; ctx.font = '400 32px ' + CARD.body;
     let lines = wrapText(ctx, r.meaning || '', contentW);
-    const maxLines = Math.min(CARD.maxMeaningLines, Math.max(2, Math.floor((H - 250 - y) / 46)));
+    const maxLines = Math.min(CARD.maxMeaningLines, Math.max(2, Math.floor((H - 190 - y) / 46)));
     if (lines.length > maxLines) {
       lines = lines.slice(0, maxLines);
       let last = lines[lines.length - 1].replace(/[\s.,;:]*$/, '');
@@ -247,11 +247,9 @@
     }
     lines.forEach(line => { y += 46; ctx.fillText(line, x, y); });
 
-    // Низ: застереження й адреса сайту
+    // Низ: застереження. Адреси сайту на картці немає — посилання йде текстом разом із картинкою (версія 3 учасниці).
     ctx.fillStyle = CARD.muted; ctx.font = '400 28px ' + CARD.body;
-    ctx.fillText(T.SHARE.card_disclaimer, x, H - 190);
-    ctx.fillStyle = CARD.ink; ctx.font = '700 34px ' + CARD.body;
-    ctx.fillText(siteLabel(), x, H - 130);
+    ctx.fillText(T.SHARE.card_disclaimer, x, H - 130);
     return canvas;
   }
 
@@ -265,6 +263,16 @@
     a.href = url; a.download = fileName;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  // Запасний варіант (комп'ютер або браузер без меню «Поділитися»): завантажуємо картинку
+  // і копіюємо текст із посиланням, щоб надіслати їх разом.
+  function saveAndCopy(blob, fileName, result) {
+    downloadBlob(blob, fileName);
+    copyText(shareMessage(buildLink(result))).then(
+      () => setStatus(T.SHARE.image_saved_copied),
+      () => setStatus(T.SHARE.image_saved_nocopy)
+    );
   }
 
   // Шрифти сайту мають завантажитися до малювання, інакше canvas візьме запасні.
@@ -286,15 +294,15 @@
         try { file = new File([blob], fileName, { type: 'image/png' }); } catch (e) { file = null; }
         // Меню «Поділитися» з картинкою є на більшості телефонів
         if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-          return navigator.share({ files: [file], title: T.SHARE.share_title, text: buildLink(result) })
+          // Текст і посилання — підпис до картинки (у Telegram посилання буде активним)
+          return navigator.share({ files: [file], title: T.SHARE.share_title, text: shareMessage(buildLink(result)) })
             .then(() => setStatus(T.SHARE.image_done))
             .catch(err => {
               if (err && err.name === 'AbortError') setStatus(''); // людина сама закрила меню
-              else { downloadBlob(blob, fileName); setStatus(T.SHARE.image_downloaded_files); }
+              else saveAndCopy(blob, fileName, result);
             });
         }
-        downloadBlob(blob, fileName);
-        setStatus(T.SHARE.image_downloaded);
+        saveAndCopy(blob, fileName, result);
       })
       .catch(() => setStatus(T.SHARE.image_error, true));
   }
@@ -324,7 +332,7 @@
   }
 
   // ===== 6. ЗАПУСК =====
-  // config: { linkButton, imageButton, statusEl, getResult(), onLoadFromLink(state), allowTrack, siteLabel? }
+  // config: { linkButton, imageButton, statusEl, getResult(), onLoadFromLink(state), allowTrack, shareText?, copyWithText? }
   function init(options) {
     config = options || {};
     const linkBtn = document.querySelector(config.linkButton || '#btn-link');
