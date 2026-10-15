@@ -179,10 +179,47 @@
   $('quiz-disclaimer').textContent = T.QUIZ.DISCLAIMER;
   $('license').textContent = T.QUIZ.LICENSE;
   $('escs-hint').textContent = T.CALC.escs_hint;
-  $('escs-details-summary').textContent = T.CALC.escs_details_summary;
-  $('escs-details-text').textContent = T.CALC.escs_details_text;
+  $('escs-helper-summary').textContent = T.CALC.escs_helper_summary;
+  $('escs-helper-intro').textContent = T.CALC.escs_helper_intro;
   $('track-legend').textContent = T.CALC.track_legend;
   $('track-hint').textContent = T.CALC.track_hint;
+
+  // ---------- Помічник «Визнач свій рівень»: 7 питань → оцінка ESCS → автоматичний вибір рівня
+  let ESCS_MODEL = null;
+  function setupEscsHelper(model) {
+    ESCS_MODEL = model;
+    const Q = T.CALC.escs_questions;
+    $('escs-questions').innerHTML = window.PisaEscs.QUESTIONS.map(q => {
+      const def = Q[q], name = 'escsq-' + q;
+      const control = def.select
+        ? `<select id="${name}" name="${name}"><option value="">${T.CALC.escs_select_placeholder}</option>${Object.entries(def.options).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select>`
+        : `<div class="chips chips-sm" role="radiogroup" aria-labelledby="${name}-label">${Object.entries(def.options).map(([v, l]) =>
+            `<label><input type="radio" name="${name}" value="${v}"><span>${l}</span></label>`).join('')}</div>`;
+      return `<div class="escs-q"><p class="escs-q-label" id="${name}-label">${def.select ? `<label for="${name}">${def.label}</label>` : def.label}</p>${def.hint ? `<p class="hint">${def.hint}</p>` : ''}${control}</div>`;
+    }).join('');
+    $('escs-helper').hidden = false;
+    $('escs-questions').addEventListener('change', e => { e.stopPropagation(); updateEscsEstimate(); });
+    updateEscsEstimate();
+  }
+  function escsAnswers() {
+    const a = {};
+    for (const q of window.PisaEscs.QUESTIONS) {
+      const el = form.querySelector(`select[name="escsq-${q}"]`) || form.querySelector(`input[name="escsq-${q}"]:checked`);
+      a[q] = el ? el.value : '';
+    }
+    return a;
+  }
+  function updateEscsEstimate() {
+    const res = window.PisaEscs.estimate(ESCS_MODEL, escsAnswers()), box = $('escs-estimate'), N = T.CALC.escs_level_name;
+    if (!res.complete) { box.innerHTML = `<p class="hint">${T.CALC.escs_incomplete}</p>`; return; }
+    const msg = res.nearLevel
+      ? fill(T.CALC.escs_result_near, { level: N[res.level], other: N[res.nearLevel] })
+      : fill(T.CALC.escs_result, { level: N[res.level] });
+    const n = Math.round(ESCS_MODEL.validation.accuracy * 10);
+    box.innerHTML = `<p class="escs-result"><b>${msg}</b></p><p class="hint">${fill(T.CALC.escs_reliability, { n })}</p>`;
+    const radio = form.querySelector(`input[name="escs"][value="${res.level}"]`);
+    if (radio && !radio.checked) { radio.checked = true; updateButton(); }
+  }
 
   // Поле «Де ти вчишся?» — лише якщо в таблиці є рядки з типом навчання. За замовчуванням «Не вказувати».
   function setupTrackField() {
@@ -193,6 +230,9 @@
   }
   $('data-note').textContent = T.CALC.note;
   $('scale-caption').textContent = T.CALC.scale_caption;
+
+  // Модель для помічника необов'язкова: якщо не завантажилась, помічник просто не показується.
+  fetch('data/escs_model.json').then(r => (r.ok ? r.json() : null)).then(m => { if (m) setupEscsHelper(m); }).catch(() => {});
 
   fetch('data/pisa_ukraine_calculator.csv')
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })

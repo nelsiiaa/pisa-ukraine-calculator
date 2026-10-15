@@ -99,6 +99,24 @@ details.explain summary { cursor: pointer; font-weight: 600; color: var(--accent
 details.explain summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 details.explain p { padding: 4px 0 2px; max-width: 60ch; }
 
+/* Помічник «Визнач свій рівень» */
+.escs-helper { border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px 14px; }
+.escs-helper[open] { background: var(--bg); }
+.escs-helper > .hint { margin-bottom: 12px; }
+.escs-questions { display: flex; flex-direction: column; gap: 16px; }
+.escs-q { display: flex; flex-direction: column; gap: 8px; }
+.escs-q-label { font-weight: 600; color: var(--ink); font-size: 15px; }
+.chips-sm { gap: 6px; }
+.chips-sm span { padding: 6px 13px; font-size: 15px; }
+.escs-q select {
+  font: 500 15px/1.3 var(--body); color: var(--ink); background: var(--surface); width: 100%;
+  min-height: 44px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px;
+}
+.escs-q select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.escs-estimate { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.escs-result { padding: 12px 14px; border-radius: 10px; background: var(--accent-soft); color: var(--ink); }
+.escs-result b { font-weight: 600; }
+
 /* ---------- Результат ---------- */
 .result { display: flex; flex-direction: column; gap: 16px; }
 .main-result { display: flex; flex-direction: column; gap: 14px; }

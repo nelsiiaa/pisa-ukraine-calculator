@@ -1,0 +1,83 @@
+{
+ "source": "OECD PISA 2025 Student Questionnaire PUF, Ukraine (CNT QUA); scripts/escs_model.py",
+ "formula": {
+  "intercept": -3.3834,
+  "paredint": 0.167,
+  "hisei": 0.0193,
+  "homepos": 0.4278
+ },
+ "cuts": [
+  -0.6785,
+  0.1916
+ ],
+ "near_cut": 0.2,
+ "education": {
+  "basic": 8.63,
+  "secondary": 12.0,
+  "college": 14.0,
+  "university": 16.0,
+  "unknown": 14.06
+ },
+ "occupation": {
+  "isco0": 50.3,
+  "isco1": 62.2,
+  "isco2": 77.4,
+  "isco3": 56.7,
+  "isco4": 40.2,
+  "isco5": 31.2,
+  "isco6": 17.8,
+  "isco7": 29.4,
+  "isco8": 26.3,
+  "isco9": 19.0,
+  "unknown": 55.2
+ },
+ "home": {
+  "intercept": -2.9638,
+  "items": {
+   "books": {
+    "0-10": 0.0,
+    "11-25": 0.1423,
+    "26-100": 0.2796,
+    "101-200": 0.3671,
+    "200+": 0.4567,
+    "unknown": 0.1714
+   },
+   "cars": {
+    "0": 0.0,
+    "1": 0.2514,
+    "2": 0.4634,
+    "3+": 0.6833,
+    "unknown": 0.253
+   },
+   "toilets": {
+    "0": 0.0,
+    "1": 0.5739,
+    "2": 0.9724,
+    "3+": 1.4463,
+    "unknown": 0.6111
+   },
+   "laptops": {
+    "0": 0.0,
+    "1-2": 0.4485,
+    "3-5": 0.7772,
+    "5+": 1.4699,
+    "unknown": 0.4186
+   },
+   "tvs": {
+    "0": 0.0,
+    "1-2": 0.6805,
+    "3-5": 1.1279,
+    "5+": 1.3546,
+    "unknown": 0.7403
+   }
+  }
+ },
+ "validation": {
+  "accuracy": 0.828,
+  "off_by_two": 0.0003,
+  "r2": 0.866,
+  "accuracy_near_cut": 0.655,
+  "accuracy_far_from_cut": 0.924,
+  "share_near_cut": 0.356
+ }
+}

@@ -51,9 +51,12 @@
         <label><input type="radio" name="escs" value="mid"><span>Середній</span></label>
         <label><input type="radio" name="escs" value="high"><span>Вищий</span></label>
       </div>
-      <details class="explain">
-        <summary id="escs-details-summary"></summary>
-        <p id="escs-details-text"></p>
+      <!-- Помічник: визначає рівень за 7 питаннями (js/escs.js) -->
+      <details class="explain escs-helper" id="escs-helper" hidden>
+        <summary id="escs-helper-summary"></summary>
+        <p class="hint" id="escs-helper-intro"></p>
+        <div id="escs-questions" class="escs-questions"></div>
+        <div id="escs-estimate" class="escs-estimate" aria-live="polite"></div>
       </details>
     </fieldset>
     <!-- Необов'язкове поле: показується, лише якщо в CSV є колонка track -->
@@ -140,6 +143,7 @@
 <script src="js/years.js"></script>
 <script src="js/quiz.js"></script>
 <script src="js/calculator.js"></script>
+<script src="js/escs.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
