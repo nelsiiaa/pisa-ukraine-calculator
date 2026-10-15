@@ -26,11 +26,16 @@
         const raw = (v[i] || '').trim();
         o[h] = NUMERIC.includes(h) ? C.toNumber(raw) : h === 'enough_data' ? C.toBool(raw) === true : raw;
       });
+      if (!('track' in o) || o.track === '') o.track = 'all'; // CSV без колонки track = усі рядки «без типу навчання»
       return o;
     });
   }
 
-  const findRow = (rows, s, g, e) => rows.find(r => r.subject === s && r.gender === g && r.escs === e) || null;
+  const TRACKS = ['grade9', 'general', 'vocational'];
+  /** Рядок таблиці; track за замовчуванням 'all' (без типу навчання). */
+  const findRow = (rows, s, g, e, t) => rows.find(r => r.subject === s && r.gender === g && r.escs === e && (r.track || 'all') === (t || 'all')) || null;
+  /** Чи є в таблиці рядки з типом навчання (тоді показуємо поле «Де ти вчишся?»). */
+  const hasTrack = rows => rows.some(r => r.track && r.track !== 'all');
   const int = x => C.roundHalfUp(x);
 
   /** Головна цифра: «58% (54–62%)»; цілі числа, довге тире без пробілів. */
@@ -39,9 +44,11 @@
   }
 
   /** Речення під цифрою; без даних — лише назва групи й пояснення, без посилання на цифру. */
-  function groupSentence(subject, gender, escs, enoughData) {
+  function groupSentence(subject, gender, escs, enoughData, track) {
     const tail = enoughData === false ? T.CALC.no_data_explain : T.CALC.share_sentence;
+    const tr = track && track !== 'all' ? T.CALC.group_track.replace('{track_in}', T.CALC.track_in[track]) : '';
     return T.CALC.group_sentence
+      .replace('{track}', tr)
       .replace('{gender}', T.CALC.gender_plural[gender])
       .replace('{escs}', T.CALC.escs_instr[escs])
       .replace('{subject}', T.SUBJECT_NAME[subject]) + ' ' + tail;
@@ -79,5 +86,12 @@
     return out;
   }
 
-  return { OECD_PCT, UKRAINE_CHECK, parseCsv, findRow, formatMain, groupSentence, diffSentence, assignLanes, combinations };
+  /** 54 комбінації з типом навчання. */
+  function trackCombinations() {
+    const out = [];
+    for (const [s, g, e] of combinations()) for (const t of TRACKS) out.push([s, g, e, t]);
+    return out;
+  }
+
+  return { OECD_PCT, UKRAINE_CHECK, TRACKS, parseCsv, findRow, hasTrack, formatMain, groupSentence, diffSentence, assignLanes, combinations, trackCombinations };
 });

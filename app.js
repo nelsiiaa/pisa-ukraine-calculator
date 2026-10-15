@@ -2,7 +2,7 @@
 // Частина 1 (калькулятор): логіка — js/calculator.js, відображення — тут. Частини 2–5 — у js/*.js, тексти — js/texts.js.
 //
 // КОНТРАКТ ДЛЯ ІНШИХ ЧАСТИН:
-//   після показу результату:  document 'pisa:result', detail = { subject, gender, escs, pct, ciLow, ciHigh,
+//   після показу результату:  document 'pisa:result', detail = { subject, gender, escs, track, pct, ciLow, ciHigh,
 //                                                                  enoughData, ukrainePct, oecdPct, vsUkraine }
 //   при поверненні до форми:  document 'pisa:reset'
 (function () {
@@ -18,7 +18,7 @@
 
   function selection() {
     const v = name => (form.querySelector(`input[name="${name}"]:checked`) || {}).value;
-    return { subject: v('subject'), gender: v('gender'), escs: v('escs') };
+    return { subject: v('subject'), gender: v('gender'), escs: v('escs'), track: v('track') || 'all' };
   }
   function updateButton() {
     const s = selection();
@@ -66,10 +66,13 @@
   }
   window.addEventListener('resize', () => { if (lastScale && !result.hidden) renderScale(lastScale); });
 
-  function renderMain(subject, gender, escs, row) {
-    const ukraine = K.findRow(ROWS, subject, 'all', 'all'), oecd = K.OECD_PCT[subject];
+  function renderMain(subject, gender, escs, track, row) {
+    // «Усі учні України» — завжди без типу навчання, навіть якщо його обрано.
+    const ukraine = K.findRow(ROWS, subject, 'all', 'all', 'all'), oecd = K.OECD_PCT[subject];
     $('res-subject').textContent = T.SUBJECT_NAME[subject];
-    $('res-sentence').textContent = K.groupSentence(subject, gender, escs, row.enough_data);
+    $('res-sentence').textContent = K.groupSentence(subject, gender, escs, row.enough_data, track);
+    $('res-track-note').hidden = track === 'all';
+    $('res-track-note').textContent = T.CALC.track_note;
     const points = [];
     if (row.enough_data) {
       const m = K.formatMain(row);
@@ -88,7 +91,7 @@
     result.hidden = false; // підписи вимірюються лише у видимому блоці
     renderScale(points);
     document.dispatchEvent(new CustomEvent('pisa:result', { detail: {
-      subject, gender, escs, pct: row.pct_level2, ciLow: row.ci_low, ciHigh: row.ci_high, enoughData: row.enough_data,
+      subject, gender, escs, track, pct: row.pct_level2, ciLow: row.ci_low, ciHigh: row.ci_high, enoughData: row.enough_data,
       ukrainePct: ukraine.pct_level2, oecdPct: oecd, vsUkraine: row.vs_ukraine,
     } }));
   }
@@ -145,23 +148,23 @@
   }
 
   // ---------- Частина 5: розрив за статтю (той самий достаток) і за достатком (та сама стать)
-  function renderYears(subject, gender, escs) {
+  function renderYears(subject, gender, escs, track) {
     const Y = window.PisaYears;
     const blocks = [
-      { title: T.YEARS.HEADING_GENDER, res: Y.buildGapText(subject, K.findRow(ROWS, subject, 'female', escs), K.findRow(ROWS, subject, 'male', escs)) },
-      { title: T.YEARS.HEADING_ESCS, res: Y.buildGapText(subject, K.findRow(ROWS, subject, gender, 'low'), K.findRow(ROWS, subject, gender, 'high')) },
+      { title: T.YEARS.HEADING_GENDER, res: Y.buildGapText(subject, K.findRow(ROWS, subject, 'female', escs, track), K.findRow(ROWS, subject, 'male', escs, track)) },
+      { title: T.YEARS.HEADING_ESCS, res: Y.buildGapText(subject, K.findRow(ROWS, subject, gender, 'low', track), K.findRow(ROWS, subject, gender, 'high', track)) },
     ];
     $('years').innerHTML = blocks.filter(b => b.res.situation !== 'error').map(b =>
       `<div class="gap"><h3>${b.title}</h3><p>${b.res.sentences.join(' ')}</p></div>`).join('');
   }
 
-  function show({ subject, gender, escs }) {
-    const row = K.findRow(ROWS, subject, gender, escs);
+  function show({ subject, gender, escs, track }) {
+    const row = K.findRow(ROWS, subject, gender, escs, track);
     if (!row) return;
     form.hidden = true;
-    renderMain(subject, gender, escs, row);
+    renderMain(subject, gender, escs, track, row);
     renderMeaning(row, subject);
-    renderYears(subject, gender, escs);
+    renderYears(subject, gender, escs, track);
     renderSolutions(row);
     const link = $('quiz-link');
     link.hidden = !quizDone;
@@ -176,6 +179,18 @@
   $('quiz-disclaimer').textContent = T.QUIZ.DISCLAIMER;
   $('license').textContent = T.QUIZ.LICENSE;
   $('escs-hint').textContent = T.CALC.escs_hint;
+  $('escs-details-summary').textContent = T.CALC.escs_details_summary;
+  $('escs-details-text').textContent = T.CALC.escs_details_text;
+  $('track-legend').textContent = T.CALC.track_legend;
+  $('track-hint').textContent = T.CALC.track_hint;
+
+  // Поле «Де ти вчишся?» — лише якщо в таблиці є рядки з типом навчання. За замовчуванням «Не вказувати».
+  function setupTrackField() {
+    if (!K.hasTrack(ROWS)) return;
+    $('track-chips').innerHTML = ['all', ...K.TRACKS].map(t =>
+      `<label><input type="radio" name="track" value="${t}"${t === 'all' ? ' checked' : ''}><span>${T.CALC.track_options[t]}</span></label>`).join('');
+    $('track-field').hidden = false;
+  }
   $('data-note').textContent = T.CALC.note;
   $('scale-caption').textContent = T.CALC.scale_caption;
 
@@ -183,6 +198,7 @@
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
     .then(text => {
       ROWS = K.parseCsv(text);
+      setupTrackField();
       updateButton();
       window.PisaQuiz.start({
         mount: $('quiz-body'), rows: ROWS,

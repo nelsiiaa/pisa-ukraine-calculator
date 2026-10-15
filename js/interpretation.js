@@ -7,7 +7,7 @@
   'use strict';
 
   const ERROR = () => ({ situation: 'error', sentences: [], text: '' });
-  const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+  const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)).replace(/,(\s*[,.])/g, '$1');
 
   /** Повертає пояснення для одного рядка таблиці (об'єкт або об'єкт із методом get). */
   function buildInterpretation(row) {
@@ -19,7 +19,8 @@
         console.warn('interpretation: невідомі subject/gender/escs', subject, gender, escs);
         return ERROR();
       }
-      const group = T.GROUP_GEN[gender][escs];
+      const track = C.field(row, 'track');
+      const group = T.GROUP_GEN[gender][escs] + (track && track !== 'all' && T.TRACK_SUFFIX[track] ? T.TRACK_SUFFIX[track] : '');
       const enough = C.toBool(C.field(row, 'enough_data'));
       if (enough === null) {
         console.warn('interpretation: невідоме значення enough_data');

@@ -21,7 +21,7 @@ L2 = {'MATH': 420.07, 'READ': 407.47, 'SCIE': 409.54}
 L5 = {'MATH': 606.99, 'READ': 625.61, 'SCIE': 633.33}
 RW = [f'W_FSTURWT{i}' for i in range(1, 81)]
 PV = [f'PV{i}{s}' for s in SUBJ.values() for i in range(1, 11)]
-cols = ['CNT', 'CNTSCHID', 'OECD', 'ST004D01T', 'ESCS', 'W_FSTUWT'] + RW + PV
+cols = ['CNT', 'CNTSCHID', 'OECD', 'ST004D01T', 'ESCS', 'ISCEDP', 'W_FSTUWT'] + RW + PV
 d, _ = pyreadstat.read_sav(SRC, usecols=cols, apply_value_formats=False)  # user-missing codes -> NaN
 
 def weights(x):
@@ -48,32 +48,44 @@ u['escs'] = None
 u.loc[order, 'escs'] = np.select([cw <= 1 / 3, cw <= 2 / 3], ['low', 'mid'], 'high')
 cuts = [round(float(e.ESCS[order][cw <= q].iloc[-1]), 2) for q in (1 / 3, 2 / 3)]
 u['gender'] = u.ST004D01T.map({1: 'female', 2: 'male'})
+# Тип навчання («Де ти вчишся?») за ISCEDP: 244 — 9 клас; 344 — 10–11 клас, загальна освіта;
+# 354 — професійна освіта (ПТУ, фахові коледжі, коледжі у складі ЗВО).
+TRACKS = {244: 'grade9', 344: 'general', 354: 'vocational'}
+u['track'] = u.ISCEDP.map(TRACKS)
 
-def subset(g, s):
+def subset(g, s, t='all'):
     x = u
     if g != 'all': x = x[x.gender == g]
     if s != 'all': x = x[x.escs == s]
+    if t != 'all': x = x[x.track == t]
     return x
+
+def make_row(key, subj, th_all, g, s, t):
+    x = subset(g, s, t)
+    th = theta_share(x, subj, L2[subj])
+    p, pse = est(th)
+    m, mse = est(theta_mean(x, subj))
+    diff, dse = est(th - th_all)  # завжди порівняння з усіма учнями України
+    n, ns = len(x), x.CNTSCHID.nunique()
+    enough = n >= 30 and ns >= 5  # PISA reporting standard
+    sig = abs(diff) > 1.96 * dse if dse > 0 else False
+    return dict(subject=key, gender=g, escs=s, track=t,
+                pct_level2=round(100 * p, 1), ci_low=round(100 * (p - 1.96 * pse), 1), ci_high=round(100 * (p + 1.96 * pse), 1),
+                se=round(100 * pse, 2), mean_score=round(m, 1), mean_se=round(mse, 1),
+                diff_vs_ukraine=round(100 * diff, 1), diff_se=round(100 * dse, 2),
+                vs_ukraine=('about' if (g == 'all' and s == 'all' and t == 'all') else ('above' if sig and diff > 0 else 'below' if sig else 'about')),
+                n_students=n, n_schools=ns, enough_data=enough)
 
 rows = []
 for key, subj in SUBJ.items():
     th_all = theta_share(u, subj, L2[subj])
     for g in ['all', 'female', 'male']:
         for s in ['all', 'low', 'mid', 'high']:
-            x = subset(g, s)
-            th = theta_share(x, subj, L2[subj])
-            p, pse = est(th)
-            m, mse = est(theta_mean(x, subj))
-            diff, dse = est(th - th_all)
-            n, ns = len(x), x.CNTSCHID.nunique()
-            enough = n >= 30 and ns >= 5  # PISA reporting standard
-            sig = abs(diff) > 1.96 * dse if dse > 0 else False
-            rows.append(dict(subject=key, gender=g, escs=s,
-                             pct_level2=round(100 * p, 1), ci_low=round(100 * (p - 1.96 * pse), 1), ci_high=round(100 * (p + 1.96 * pse), 1),
-                             se=round(100 * pse, 2), mean_score=round(m, 1), mean_se=round(mse, 1),
-                             diff_vs_ukraine=round(100 * diff, 1), diff_se=round(100 * dse, 2),
-                             vs_ukraine=('about' if (g == 'all' and s == 'all') else ('above' if sig and diff > 0 else 'below' if sig else 'about')),
-                             n_students=n, n_schools=ns, enough_data=enough))
+            rows.append(make_row(key, subj, th_all, g, s, 'all'))
+    for t in TRACKS.values():
+        for g in ['female', 'male']:
+            for s in ['low', 'mid', 'high']:
+                rows.append(make_row(key, subj, th_all, g, s, t))
 table = pd.DataFrame(rows)
 
 # ---------- OECD average (mean of OECD country estimates; SE = sqrt(sum SE^2) / N)
@@ -101,6 +113,7 @@ for key, subj in SUBJ.items():
 meta = dict(
     source='OECD PISA 2025 Student Questionnaire public use file (CY09_MS_STU_PUF), Ukraine = CNT QUA ("Ukrainian regions, 17 of 27")',
     students=int(len(u)), schools=int(u.CNTSCHID.nunique()), escs_missing=int(u.ESCS.isna().sum()),
+    tracks='track: grade9 = ISCEDP 244 (9 клас), general = 344 (10–11 клас, загальна освіта), vocational = 354 (професійна освіта: ПТУ, коледжі); all = без цієї ознаки.',
     escs_groups=f'Weighted national thirds of ESCS: low <= {cuts[0]}, mid ({cuts[0]}, {cuts[1]}], high > {cuts[1]}. Students with missing ESCS appear only in escs="all" rows.',
     level2_cutoffs=L2, level5_cutoffs=L5,
     cutoff_note='Level 2 cut-offs for mathematics and reading reproduce the published Ukrainian results; the science cut-off (PISA 2015-2022 scale) and all Level 5 cut-offs must be checked against the PISA 2025 Technical Report.',

@@ -72,3 +72,42 @@ test('ч.1: підписи на відстані 1 п.п. не накладаю�
   // далекі підписи лишаються в одному ряду
   assert.deepEqual(K.assignLanes([10, 90].map(v => ({ x: v / 100 * W, width: 100 })), 10), [0, 0]);
 });
+
+// ---------------- Тип навчання («Де ти вчишся?»)
+test('ч.1 track: усі 54 комбінації є в CSV, без undefined', () => {
+  assert.equal(K.trackCombinations().length, 54);
+  assert.ok(K.hasTrack(ROWS));
+  for (const [s, g, e, t] of K.trackCombinations()) {
+    const r = K.findRow(ROWS, s, g, e, t);
+    assert.ok(r, `${s}/${g}/${e}/${t}`);
+    for (const f of ['pct_level2', 'ci_low', 'ci_high', 'diff_vs_ukraine']) assert.ok(Number.isFinite(r[f]), `${s}/${g}/${e}/${t}.${f}`);
+  }
+});
+test('ч.1 track: «Не вказувати» = режим без поля; «усі учні України» й ОЕСР не змінюються', () => {
+  for (const [s, g, e] of K.combinations()) assert.equal(K.findRow(ROWS, s, g, e), K.findRow(ROWS, s, g, e, 'all'));
+  for (const s of ['read', 'math', 'scie']) {
+    const ua = K.findRow(ROWS, s, 'all', 'all', 'all');
+    assert.ok(Math.abs(ua.pct_level2 - K.UKRAINE_CHECK[s]) < 0.05);
+    assert.equal(K.findRow(ROWS, s, 'all', 'all', 'grade9'), null); // окремого «усі учні» для типу навчання немає
+  }
+});
+test('ч.1 track: CSV без колонки track — поле не показується, пошук працює', () => {
+  const csv = 'subject,gender,escs,pct_level2,ci_low,ci_high,mean_score,diff_vs_ukraine,vs_ukraine,n_students,n_schools,enough_data\nread,male,low,39.3,34.9,43.7,384,-15.3,below,1065,259,True';
+  const rows = K.parseCsv(csv);
+  assert.equal(K.hasTrack(rows), false);
+  assert.equal(K.findRow(rows, 'read', 'male', 'low').pct_level2, 39.3);
+});
+test('ч.1 track: речення про групу з типом навчання', () => {
+  assert.equal(K.groupSentence('read', 'male', 'low', true, 'grade9').split('.')[0], 'Це група: хлопці з нижчим достатком родини, які навчаються у 9 класі, предмет — читання');
+  assert.ok(K.groupSentence('math', 'female', 'high', true, 'vocational').includes('у професійному закладі чи коледжі'));
+  assert.ok(!K.groupSentence('math', 'female', 'high', true, 'all').includes('навчаються'));
+});
+test('ч.3/5 track: підпис групи з типом навчання без зайвих ком', () => {
+  const I = require('../js/interpretation.js'), Y = require('../js/years.js');
+  const r = K.findRow(ROWS, 'read', 'male', 'low', 'vocational');
+  const t = I.buildInterpretation(r).text;
+  assert.ok(t.includes('які навчаються в професійному закладі чи коледжі, цього рівня'));
+  assert.doesNotMatch(t, /,\s*[,.]/);
+  const g = Y.buildGapText('read', K.findRow(ROWS, 'read', 'female', 'low', 'vocational'), r).sentences[0];
+  assert.doesNotMatch(g, /,\s*[,.]/);
+});

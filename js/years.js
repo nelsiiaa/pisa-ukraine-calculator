@@ -9,7 +9,7 @@
 
   const Y = T.YEARS;
   const ERROR = () => ({ situation: 'error', sentences: [] });
-  const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+  const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)).replace(/,(\s*[,.])/g, '$1');
 
   /** Кількість років навчання для різниці в балах. */
   function yearsFromPoints(points) {
@@ -36,8 +36,9 @@
     try {
       if (!C.SUBJECTS.includes(subject)) return ERROR();
       const labelOf = row => {
-        const g = C.field(row, 'gender'), e = C.field(row, 'escs');
-        return C.GENDERS.includes(g) && C.ESCS.includes(e) ? T.GROUP_GEN[g][e] : null;
+        const g = C.field(row, 'gender'), e = C.field(row, 'escs'), t = C.field(row, 'track');
+        if (!C.GENDERS.includes(g) || !C.ESCS.includes(e)) return null;
+        return T.GROUP_GEN[g][e] + (t && t !== 'all' && T.TRACK_SUFFIX[t] ? T.TRACK_SUFFIX[t] : '');
       };
       const la = labelOf(rowA), lb = labelOf(rowB);
       if (!la || !lb) return ERROR();

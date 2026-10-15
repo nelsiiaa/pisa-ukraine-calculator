@@ -51,6 +51,16 @@
         <label><input type="radio" name="escs" value="mid"><span>Середній</span></label>
         <label><input type="radio" name="escs" value="high"><span>Вищий</span></label>
       </div>
+      <details class="explain">
+        <summary id="escs-details-summary"></summary>
+        <p id="escs-details-text"></p>
+      </details>
+    </fieldset>
+    <!-- Необов'язкове поле: показується, лише якщо в CSV є колонка track -->
+    <fieldset id="track-field" hidden>
+      <legend id="track-legend"></legend>
+      <p class="hint" id="track-hint"></p>
+      <div class="chips" id="track-chips" aria-describedby="track-hint"></div>
     </fieldset>
     <button type="submit" id="show-btn" class="btn primary" disabled>Показати</button>
     <p class="hint" id="form-hint">Оберіть усі три пункти, щоб побачити результат.</p>
@@ -62,6 +72,7 @@
       <p class="eyebrow" id="res-subject"></p>
       <p class="big"><span id="res-pct"></span><span class="range" id="res-range"></span></p>
       <p id="res-sentence" class="sentence"></p>
+      <p id="res-track-note" class="hint" hidden></p>
 
       <figure class="scale" id="scale">
         <figcaption class="hint" id="scale-caption"></figcaption>

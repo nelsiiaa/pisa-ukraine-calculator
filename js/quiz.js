@@ -10,7 +10,7 @@
   const Q = T.QUIZ;
   const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const find = (rows, s, g, e) => rows.find(r => r.subject === s && r.gender === g && r.escs === e) || null;
+  const find = (rows, s, g, e) => rows.find(r => r.subject === s && r.gender === g && r.escs === e && (r.track || 'all') === 'all') || null;
 
   /** Частка учнів, які НЕ досягають рівня 2, з рядка «усі учні» таблиці: 54.6 → «45,4». */
   function belowLevel2(rows, subject) {
