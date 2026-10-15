@@ -269,5 +269,30 @@
     ],
   };
 
-  return { SUBJECT_FROM, SUBJECT_NAME, GROUP_GEN, TRACK_SUFFIX, GROUP_NOM, CALC, INTERPRETATION, AUDIENCE, DIRECTIONS, SOLUTIONS, YEARS, QUIZ };
+  // ---------- Частина 6: поділитися (js/share.js, основа — share.js учасниці) ----------
+  const SHARE = {
+    link_button: 'Скопіювати посилання',
+    image_button: 'Зберегти картинку',
+    link_copied: 'Посилання скопійовано. Надішли його друзям.',
+    link_prompt: 'Скопіюй посилання:',
+    image_making: 'Створюю картинку…',
+    image_done: 'Готово.',
+    image_downloaded: 'Картинку завантажено.',
+    image_downloaded_files: 'Картинку завантажено у файли.',
+    image_error: 'Не вдалося створити картинку. Спробуй ще раз.',
+    no_result: 'Спочатку оберіть параметри й натисніть «Показати».',
+    share_title: 'Калькулятор PISA: Україна',
+    file_name: 'pisa-result.png',
+    // Картка
+    card_source: 'Дані PISA 2025 · Україна',
+    card_title: 'Чи залежить освіта від того, хто ти?',
+    card_gender: { female: 'Дівчата', male: 'Хлопці' },
+    card_escs: { low: 'Нижчий достаток', mid: 'Середній достаток', high: 'Вищий достаток' },
+    card_reach: 'учнів цієї групи досягають базового рівня знань',
+    card_meaning: 'Що це означає',
+    card_disclaimer: 'Це середнє для групи учнів, а не прогноз для конкретної людини.',
+    card_local_site: "(адреса сайту з'явиться після публікації)",
+  };
+
+  return { SHARE, SUBJECT_FROM, SUBJECT_NAME, GROUP_GEN, TRACK_SUFFIX, GROUP_NOM, CALC, INTERPRETATION, AUDIENCE, DIRECTIONS, SOLUTIONS, YEARS, QUIZ };
 });

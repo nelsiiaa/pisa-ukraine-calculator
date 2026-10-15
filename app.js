@@ -14,7 +14,8 @@
   const $ = id => document.getElementById(id);
 
   const form = $('calc-form'), showBtn = $('show-btn'), formHint = $('form-hint'), result = $('result'), quiz = $('quiz');
-  let ROWS = null, quizDone = false, lastScale = null;
+  let quizSkippedByLink = false;
+  let ROWS = null, quizDone = false, lastScale = null, LAST = null; // LAST — показаний результат (для частини 6)
 
   function selection() {
     const v = name => (form.querySelector(`input[name="${name}"]:checked`) || {}).value;
@@ -34,7 +35,7 @@
     form.hidden = false;
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     form.querySelector('input').focus({ preventScroll: true });
-    if (fromResult) document.dispatchEvent(new CustomEvent('pisa:reset'));
+    if (fromResult) { LAST = null; document.dispatchEvent(new CustomEvent('pisa:reset')); }
   }
 
   // ---------- Частина 1: шкала порівняння
@@ -161,6 +162,12 @@
   function show({ subject, gender, escs, track }) {
     const row = K.findRow(ROWS, subject, gender, escs, track);
     if (!row) return;
+    const ukraine = K.findRow(ROWS, subject, 'all', 'all', 'all');
+    LAST = { subject, gender, escs, track, enoughData: row.enough_data, percent: row.pct_level2, low: row.ci_low, high: row.ci_high,
+      ukraine: ukraine.pct_level2, oecd: K.OECD_PCT[subject],
+      diff: row.enough_data ? K.diffSentence(row, ukraine) : '',
+      // На картку — речення про групу (застереження вже є внизу картки, визначення рівня не вміщається)
+      meaning: (it => (it.sentences.length === 3 ? [it.sentences[1]] : it.sentences).join(' '))(window.PisaInterpretation.buildInterpretation(row)) };
     form.hidden = true;
     renderMain(subject, gender, escs, track, row);
     renderMeaning(row, subject);
@@ -221,6 +228,28 @@
     if (radio && !radio.checked) { radio.checked = true; updateButton(); }
   }
 
+  // ---------- Частина 6: поділитися (js/share.js)
+  function setupShare() {
+    $('btn-link').textContent = T.SHARE.link_button;
+    $('btn-image').textContent = T.SHARE.image_button;
+    window.PisaShare.init({
+      linkButton: '#btn-link', imageButton: '#btn-image', statusEl: '#share-status',
+      allowTrack: K.hasTrack(ROWS),
+      getResult: () => LAST,
+      // Відкрили за чиїмось посиланням: пропускаємо тест, підставляємо вибір у форму й показуємо результат.
+      onLoadFromLink: state => {
+        for (const [name, value] of Object.entries(state)) {
+          const input = form.querySelector(`input[name="${name}"][value="${value}"]`);
+          if (input) input.checked = true;
+        }
+        quizSkippedByLink = true;
+        quiz.hidden = true;
+        updateButton();
+        show(state);
+      },
+    });
+  }
+
   // Поле «Де ти вчишся?» — лише якщо в таблиці є рядки з типом навчання. За замовчуванням «Не вказувати».
   function setupTrackField() {
     if (!K.hasTrack(ROWS)) return;
@@ -240,6 +269,8 @@
       ROWS = K.parseCsv(text);
       setupTrackField();
       updateButton();
+      setupShare();
+      if (quizSkippedByLink) return;
       window.PisaQuiz.start({
         mount: $('quiz-body'), rows: ROWS,
         onDone: () => { quizDone = true; openCalculator(); },
