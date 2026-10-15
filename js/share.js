@@ -1,6 +1,6 @@
 /*
  * Частина 6. «Поділитися»: посилання з обраною комбінацією і картка-картинка 1080×1920 (сторіс).
- * Основа — share.js учасниці команди (оригінал: docs/team/part6/share.js). Узгоджено з рештою сайту:
+ * Основа — share.js учасниці команди (оригінал, версія 2: docs/team/part6/share.js). Узгоджено з рештою сайту:
  *   - параметри посилання такі самі, як у таблиці даних: ?subject=read&gender=female&escs=low[&track=grade9];
  *   - підписи з js/texts.js (SHARE, CALC), кольори й шрифти — як на сайті;
  *   - на картці та сама шкала (коло / ромб / квадрат), формат «39% (35–44%)» і текст «Що це означає», що й на сторінці.
@@ -304,6 +304,11 @@
     const result = typeof config.getResult === 'function' ? config.getResult() : null;
     if (!result || !REQUIRED.every(k => ALLOWED[k].includes(result[k]))) {
       setStatus(T.SHARE.no_result, true);
+      return null;
+    }
+    // Правило учасниці: якщо для комбінації замало даних, цифрою ділитися не можна.
+    if (result.enoughData === false) {
+      setStatus(T.SHARE.no_data_share, true);
       return null;
     }
     return result;

@@ -41,20 +41,20 @@
 
     <fieldset>
       <legend>Предмет</legend>
-      <label><input type="radio" name="subject" value="reading" checked> Читання</label>
+      <label><input type="radio" name="subject" value="read" checked> Читання</label>
       <label><input type="radio" name="subject" value="math"> Математика</label>
-      <label><input type="radio" name="subject" value="science"> Природничі науки</label>
+      <label><input type="radio" name="subject" value="scie"> Природничі науки</label>
     </fieldset>
     <fieldset>
       <legend>Стать</legend>
-      <label><input type="radio" name="sex" value="girl" checked> Дівчина</label>
-      <label><input type="radio" name="sex" value="boy"> Хлопець</label>
+      <label><input type="radio" name="gender" value="female" checked> Дівчина</label>
+      <label><input type="radio" name="gender" value="male"> Хлопець</label>
     </fieldset>
     <fieldset>
-      <legend>Достаток родини</legend>
-      <label><input type="radio" name="income" value="low"> Нижчий</label>
-      <label><input type="radio" name="income" value="mid" checked> Середній</label>
-      <label><input type="radio" name="income" value="high"> Вищий</label>
+      <legend>Становище родини</legend>
+      <label><input type="radio" name="escs" value="low"> Нижчий</label>
+      <label><input type="radio" name="escs" value="mid" checked> Середній</label>
+      <label><input type="radio" name="escs" value="high"> Вищий</label>
     </fieldset>
     <button id="btn-show" type="button">Показати</button>
   </div>
@@ -79,13 +79,13 @@
 <script src="share.js"></script>
 <script>
   // ===== ЗАГЛУШКА КАЛЬКУЛЯТОРА (вигадані цифри, лише для тесту) =====
-  var base = { reading: 55, math: 52, science: 58 };
-  var subjectNames = { reading: "читання", math: "математики", science: "природничих наук" };
+  var base = { read: 55, math: 52, scie: 58 };
+  var subjectNames = { read: "читання", math: "математики", scie: "природничих наук" };
   var current = null; // останній показаний результат
 
   function readForm() {
     function val(name) { return document.querySelector('input[name="' + name + '"]:checked').value; }
-    return { subject: val("subject"), sex: val("sex"), income: val("income") };
+    return { subject: val("subject"), gender: val("gender"), escs: val("escs") };
   }
   function setForm(state) {
     Object.keys(state).forEach(function (name) {
@@ -95,13 +95,15 @@
 
   function calculate(state) {
     var p = base[state.subject];
-    if (state.sex === "girl" && state.subject === "reading") p += 8;
-    if (state.sex === "boy" && state.subject === "reading") p -= 8;
-    if (state.sex === "boy" && state.subject === "math") p += 3;
-    p += { low: -14, mid: 0, high: 12 }[state.income];
+    if (state.gender === "female" && state.subject === "read") p += 8;
+    if (state.gender === "male" && state.subject === "read") p -= 8;
+    if (state.gender === "male" && state.subject === "math") p += 3;
+    p += { low: -14, mid: 0, high: 12 }[state.escs];
     return {
-      subject: state.subject, sex: state.sex, income: state.income,
+      subject: state.subject, gender: state.gender, escs: state.escs,
       percent: p, low: p - 4, high: p + 4,
+      // тест: вигадана комбінація «хлопець + нижче становище + природничі» має замало даних
+      enoughData: !(state.gender === "male" && state.escs === "low" && state.subject === "scie"),
       ukraine: base[state.subject], oecd: base[state.subject] + 13,
       meaning: "Це тестовий текст-пояснення. Приблизно " + p + " із 100 учнів із такими ознаками досягають базового рівня з " +
         subjectNames[state.subject] + ". Це середнє для групи, тому воно не передбачає результат конкретної людини, а показує, де в даних помітний розрив."

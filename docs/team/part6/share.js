@@ -17,14 +17,24 @@
   // ===== 1. ДОЗВОЛЕНІ ЗНАЧЕННЯ (мають збігатися з формою калькулятора) =====
   // Ліворуч: що пишемо в посилання. Праворуч: підпис для людини.
   // Якщо команда змінить варіанти у формі, змініть їх і тут.
+  // Назви значень взято з таблиці команди (data/pisa_ukraine_calculator.csv):
+  // стовпці subject, gender, escs.
   var ALLOWED = {
-    subject: { reading: "Читання", math: "Математика", science: "Природничі науки" },
-    sex: { girl: "Дівчина", boy: "Хлопець" },
-    income: { low: "Нижчий достаток", mid: "Середній достаток", high: "Вищий достаток" }
+    subject: { read: "Читання", math: "Математика", scie: "Природничі науки" },
+    gender: { female: "Дівчина", male: "Хлопець" },
+    escs: { low: "Нижче становище родини", mid: "Середнє становище родини", high: "Вище становище родини" }
   };
 
-  // Назви параметрів у посиланні: ?subject=reading&sex=girl&income=mid
-  var PARAMS = ["subject", "sex", "income"];
+  // Назви параметрів у посиланні: ?subject=math&gender=female&escs=mid
+  var PARAMS = ["subject", "gender", "escs"];
+
+  // Запасні цифри «усі учні України» та «середнє ОЕСР» (частка, що досягає рівня 2).
+  // Взято з «Бриф для ШІ». Використовуються, лише якщо getResult() не передав свої.
+  var BENCHMARKS = {
+    read: { ukraine: 54.6, oecd: 69.0 },
+    math: { ukraine: 54.0, oecd: 65.1 },
+    scie: { ukraine: 65.2, oecd: 74.3 }
+  };
 
   // ===== 2. ВИГЛЯД КАРТИНКИ =====
   var CARD = {
@@ -42,6 +52,13 @@
 
   var config = {};
   var statusTimer = null;
+
+  // Формат цифри: за замовчуванням ціле число. Щоб збігалося з сайтом, у init можна
+  // передати decimals: 1, тоді буде «54,6».
+  function fmt(v) {
+    var d = typeof config.decimals === "number" ? config.decimals : 0;
+    return Number(v).toFixed(d).replace(".", ",");
+  }
 
   // ===== 3. ПОСИЛАННЯ =====
 
@@ -171,7 +188,7 @@
     // Підпис джерела
     ctx.fillStyle = CARD.muted;
     ctx.font = "500 34px " + CARD.font;
-    ctx.fillText("Дані PISA 2025, Україна", x, y);
+    ctx.fillText("PISA 2025 · 15-річні в Україні", x, y);
 
     // Заголовок
     y += 100;
@@ -184,7 +201,7 @@
 
     // Вибрані ознаки: три «таблетки»
     y += 10;
-    var chips = [ALLOWED.subject[result.subject], ALLOWED.sex[result.sex], ALLOWED.income[result.income]];
+    var chips = [ALLOWED.subject[result.subject], ALLOWED.gender[result.gender], ALLOWED.escs[result.escs]];
     ctx.font = "600 34px " + CARD.font;
     var cx = x;
     var cy = y;
@@ -207,7 +224,7 @@
     y += 270;
     ctx.fillStyle = CARD.colors.group;
     ctx.font = "800 300px " + CARD.font;
-    ctx.fillText(Math.round(result.percent) + "%", x - 6, y);
+    ctx.fillText(fmt(result.percent) + "%", x - 6, y);
 
     y += 92;
     ctx.fillStyle = CARD.ink;
@@ -219,16 +236,19 @@
     if (result.low != null && result.high != null) {
       ctx.fillStyle = CARD.muted;
       ctx.font = "500 36px " + CARD.font;
-      ctx.fillText("можливий діапазон " + Math.round(result.low) + "–" + Math.round(result.high) + "%", x, y + 6);
+      ctx.fillText("95% діапазон: " + fmt(result.low) + "–" + fmt(result.high) + "%", x, y + 6);
       y += 60;
     }
 
     // Шкала порівняння
     y += 50;
+    var bench = BENCHMARKS[result.subject] || {};
+    var ukraineValue = typeof result.ukraine === "number" ? result.ukraine : bench.ukraine;
+    var oecdValue = typeof result.oecd === "number" ? result.oecd : bench.oecd;
     var rows = [
       { label: "Твоя група", value: result.percent, color: CARD.colors.group },
-      { label: "Усі учні України", value: result.ukraine, color: CARD.colors.ukraine },
-      { label: "Середнє по країнах ОЕСР", value: result.oecd, color: CARD.colors.oecd }
+      { label: "Усі учні України", value: ukraineValue, color: CARD.colors.ukraine },
+      { label: "Середнє по країнах ОЕСР", value: oecdValue, color: CARD.colors.oecd }
     ].filter(function (r) {
       return typeof r.value === "number" && isFinite(r.value);
     });
@@ -236,7 +256,7 @@
       ctx.fillStyle = CARD.ink;
       ctx.font = "500 32px " + CARD.font;
       ctx.fillText(row.label, x, y);
-      var valueText = Math.round(row.value) + "%";
+      var valueText = fmt(row.value) + "%";
       ctx.font = "700 32px " + CARD.font;
       ctx.textAlign = "right";
       ctx.fillText(valueText, x + contentW, y);
@@ -355,6 +375,11 @@
     var result = typeof config.getResult === "function" ? config.getResult() : null;
     if (!result) {
       setStatus("Спочатку оберіть параметри й натисніть «Показати».", true);
+      return null;
+    }
+    // Якщо в таблиці для цієї комбінації замало учнів (enough_data = false), цифрою ділитися не можна
+    if (result.enoughData === false) {
+      setStatus("Для цієї комбінації замало даних, щоб поділитися цифрою.", true);
       return null;
     }
     for (var i = 0; i < PARAMS.length; i++) {
