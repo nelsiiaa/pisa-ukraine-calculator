@@ -15,7 +15,7 @@
 
   const form = $('calc-form'), showBtn = $('show-btn'), formHint = $('form-hint'), result = $('result'), quiz = $('quiz');
   let quizSkippedByLink = false;
-  let ROWS = null, quizDone = false, lastScale = null, LAST = null; // LAST — показаний результат (для частини 6)
+  let ROWS = null, quizDone = false, quizSubjects = [], lastScale = null, LAST = null; // LAST — показаний результат (для частини 6)
 
   function selection() {
     const v = name => (form.querySelector(`input[name="${name}"]:checked`) || {}).value;
@@ -174,8 +174,10 @@
     renderYears(subject, gender, escs, track);
     renderSolutions(row);
     const link = $('quiz-link');
-    link.hidden = !quizDone;
-    if (quizDone) link.textContent = window.PisaQuiz.linkSentence(ROWS, subject, gender, escs);
+    // Речення-повернення — лише якщо в тесті було завдання з цього предмета.
+    const showLink = quizDone && quizSubjects.includes(subject);
+    link.hidden = !showLink;
+    if (showLink) link.textContent = window.PisaQuiz.linkSentence(ROWS, subject, gender, escs);
     result.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -263,18 +265,21 @@
   // Модель для помічника необов'язкова: якщо не завантажилась, помічник просто не показується.
   fetch('data/escs_model.json').then(r => (r.ok ? r.json() : null)).then(m => { if (m) setupEscsHelper(m); }).catch(() => {});
 
-  fetch('data/pisa_ukraine_calculator.csv')
-    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-    .then(text => {
+  // Банк завдань «Перевір себе»; якщо не завантажився — тест пропускається, калькулятор працює.
+  const quizBank = fetch('data/quiz_bank.json').then(r => (r.ok ? r.json() : [])).catch(() => []);
+
+  Promise.all([fetch('data/pisa_ukraine_calculator.csv').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }), quizBank])
+    .then(([text, bank]) => {
       ROWS = K.parseCsv(text);
       setupTrackField();
       updateButton();
       setupShare();
       if (quizSkippedByLink) return;
-      window.PisaQuiz.start({
-        mount: $('quiz-body'), rows: ROWS,
-        onDone: () => { quizDone = true; openCalculator(); },
+      const quiz = window.PisaQuiz.start({
+        mount: $('quiz-body'), rows: ROWS, bank,
+        onDone: done => { quizDone = done !== false; openCalculator(); },
       });
+      quizSubjects = quiz.subjects;
     })
     .catch(err => {
       console.warn(err);

@@ -73,6 +73,17 @@ a { color: var(--accent); }
 .q-opt.right b { color: var(--right); }
 .q-opt.wrong { border-color: var(--wrong); background: var(--wrong-bg); }
 .q-opt.wrong b { color: var(--wrong); }
+.q-num { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.q-num input {
+  font: 500 17px/1.3 var(--body); color: var(--ink); background: var(--surface);
+  width: 10em; max-width: 100%; min-height: 48px; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 12px;
+}
+.q-num input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.q-num input.right { border-color: var(--right); background: var(--right-bg); }
+.q-num input.wrong { border-color: var(--wrong); background: var(--wrong-bg); }
+.q-unit { font-weight: 600; color: var(--ink-2); }
+.q-num .btn.primary { align-self: auto; }
+.q-num-hint { flex-basis: 100%; color: var(--wrong); }
 .q-feedback { display: flex; flex-direction: column; gap: 10px; }
 .q-feedback:empty { display: none; }
 .q-stat { font-weight: 500; }
