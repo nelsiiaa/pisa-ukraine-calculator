@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const T = require('../js/texts.js');
 const { buildInterpretation } = require('../js/interpretation.js');
 const { buildSolutions, missingSources } = require('../js/solutions.js');
-const { yearsFromPoints, formatYears, buildGapText } = require('../js/years.js');
+const { buildGapText } = require('../js/years.js');
 const Quiz = require('../js/quiz.js');
 
 const DATA = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/pisa_ukraine_calculator.json'), 'utf8'));
@@ -107,25 +107,24 @@ test('ч.4: missingSources() повертає всі 8 id, поки джерел
   assert.equal(missingSources().length, 8);
 });
 
-// ---------------- Частина 5: бали → роки
+// ---------------- Частина 5: розрив у балах з орієнтиром ОЕСР (без переведення в роки)
 const yr = (o) => Object.assign({ gender: 'female', escs: 'all', enough_data: true, mean_score: 400 }, o);
-test('ч.5: приклади з промпту', () => {
+test('ч.5: різниця в балах, 3 речення для gap, 2 для tiny; поріг 5 балів', () => {
   const gap = (a, b) => buildGapText('read', yr({ mean_score: a }), yr({ gender: 'male', mean_score: b }));
-  assert.ok(gap(434.1, 402.4).sentences[0].includes('півтора року'));     // 31,7 → 1,5
-  assert.ok(gap(408, 400).sentences[0].includes('пів року'));            // 8,0 → 0,5
-  assert.equal(gap(404.9, 400).situation, 'tiny');                        // 4,9
-  assert.ok(gap(405, 400).sentences[0].includes('пів року'));            // 5,0 → 0,5
-  assert.equal(gap(434.1, 402.4).sentences.length, 3);
+  const g = gap(434.1, 402.4);
+  assert.equal(g.situation, 'gap');
+  assert.equal(g.sentences.length, 3);
+  assert.ok(g.sentences[1].startsWith('Різниця в середніх балах: 32 бали.'));
+  assert.ok(g.sentences[1].includes('приблизно 20 балів за рік навчання'));
+  assert.equal(gap(404.9, 400).situation, 'tiny');   // 4,9 < 5
   assert.equal(gap(404.9, 400).sentences.length, 2);
+  assert.equal(gap(405, 400).situation, 'gap');      // 5,0
 });
-test('ч.5: format_years для всіх значень', () => {
-  const expect = { 0.5: 'пів року', 1: 'один рік', 1.5: 'півтора року', 2: 'два роки', 2.5: 'два з половиною роки', 3: 'три роки',
-    3.5: 'три з половиною роки', 4: 'чотири роки', 4.5: 'чотири з половиною роки', 5: "п'ять років", 5.5: "понад п'ять років", 8: "понад п'ять років" };
-  for (const [y, s] of Object.entries(expect)) assert.equal(formatYears(Number(y)), s);
-  assert.equal(formatYears(0.2), null);
-  assert.equal(formatYears(0.25), 'пів року');
-  assert.equal(formatYears(0.75), 'один рік');
-  assert.equal(yearsFromPoints(-31.7), 1.585);
+test('ч.5: текст не переводить різницю в роки (рекомендація ОЕСР, PISA 2025 Box I.2.2)', () => {
+  const g = buildGapText('math', yr({ mean_score: 470 }), yr({ gender: 'male', mean_score: 400 })).sentences.join(' ');
+  assert.doesNotMatch(g, /пів року|півтора року|\bрік навчання\b(?! але)|два роки|три роки|понад п'ять/);
+  assert.doesNotMatch(g, /\{years_text\}/);
+  assert.equal(T.YEARS.NEEDS_VERIFICATION, false);
 });
 test('ч.5: порядок груп не впливає на текст; «у»/«в»', () => {
   const a = yr({ escs: 'low', mean_score: 420 }), b = yr({ gender: 'all', escs: 'low', mean_score: 400 });

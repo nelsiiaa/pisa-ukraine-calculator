@@ -1,6 +1,6 @@
 /*
- * Частина 6. «Поділитися»: посилання з обраною комбінацією і картка-картинка 1080×1920 (сторіс).
- * Основа — share.js учасниці команди (оригінал, версія 3: docs/team/part6/share.js). Узгоджено з рештою сайту:
+ * Частина 6. «Поділитися»: посилання з обраною комбінацією і картка-картинка 1080×1320.
+ * Основа — share.js учасниці команди (оригінал, версія 4: docs/team/part6/share.js). Узгоджено з рештою сайту:
  *   - параметри посилання такі самі, як у таблиці даних: ?subject=read&gender=female&escs=low[&track=grade9];
  *   - підписи з js/texts.js (SHARE, CALC), кольори й шрифти — як на сайті;
  *   - на картці та сама шкала (коло / ромб / квадрат), формат «39% (35–44%)» і текст «Що це означає», що й на сторінці.
@@ -46,13 +46,12 @@
 
   // ===== 2. ВИГЛЯД КАРТИНКИ (світла тема сайту) =====
   const CARD = {
-    width: 1080, height: 1920,
+    width: 1080, height: 1320, // пропорція ≈ 1:1,2 (версія 4 учасниці)
     body: '"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
     display: 'Unbounded, "Arial Black", system-ui, sans-serif',
     bg: '#f3f5f8', panel: '#ffffff', ink: '#141a24', ink2: '#4a5464', muted: '#727c8c',
     track: '#e7ebf1', chip: '#e8ecfb',
     colors: { group: '#2747d4', ukraine: '#c98200', oecd: '#6b7480' },
-    maxMeaningLines: 8,
   };
 
   let config = {};
@@ -136,120 +135,161 @@
     ctx.restore();
   }
 
+  // Ділить текст на речення (з версії 4 учасниці)
+  function splitSentences(text) {
+    const parts = String(text).replace(/\s+/g, ' ').trim().match(/[^.!?…]+[.!?…]+["»”)]*\s*|[^.!?…]+$/g);
+    return parts ? parts.map(p => p.trim()) : [];
+  }
+
+  // Підбирає розмір шрифту, щоб текст умістився у висоту; якщо ні — прибирає цілі речення з кінця (версія 4 учасниці).
+  function fitText(ctx, text, maxWidth, maxHeight, weight, family) {
+    const font = size => weight + ' ' + size + 'px ' + family;
+    for (const size of [30, 28, 26]) {
+      const step = Math.round(size * 1.4);
+      ctx.font = font(size);
+      const lines = wrapText(ctx, text, maxWidth);
+      if (lines.length * step <= maxHeight) return { size, step, lines };
+    }
+    const size = 26, step = Math.round(size * 1.4);
+    ctx.font = font(size);
+    const sentences = splitSentences(text);
+    while (sentences.length > 1) {
+      sentences.pop();
+      const lines = wrapText(ctx, sentences.join(' '), maxWidth);
+      if (lines.length * step <= maxHeight) return { size, step, lines };
+    }
+    let lines = wrapText(ctx, sentences[0] || '', maxWidth);
+    const maxLines = Math.max(1, Math.floor(maxHeight / step));
+    if (lines.length > maxLines) {
+      lines = lines.slice(0, maxLines);
+      let last = lines[maxLines - 1].replace(/[\s.,;:]*$/, '');
+      while (last.indexOf(' ') !== -1 && ctx.measureText(last + '…').width > maxWidth) last = last.slice(0, last.lastIndexOf(' ')).replace(/[\s.,;:]*$/, '');
+      lines[maxLines - 1] = last + '…';
+    }
+    return { size, step, lines };
+  }
+
+  // Картка 1080×1320 (пропорція 1:1,2 — Telegram показує її в чаті без обрізання; версія 4 учасниці).
   function drawCard(r) {
-    const W = CARD.width, H = CARD.height, x = 100, contentW = W - 2 * x;
+    const W = CARD.width, H = CARD.height, x = 96, contentW = W - 2 * x;
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
     ctx.textBaseline = 'alphabetic';
 
     ctx.fillStyle = CARD.bg; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = CARD.panel; roundRect(ctx, 48, 48, W - 96, H - 96, 48); ctx.fill();
+    ctx.fillStyle = CARD.panel; roundRect(ctx, 36, 36, W - 72, H - 72, 44); ctx.fill();
 
-    let y = 170;
-    ctx.fillStyle = CARD.muted; ctx.font = '600 32px ' + CARD.body;
+    let y = 118;
+    ctx.fillStyle = CARD.muted; ctx.font = '600 28px ' + CARD.body;
     ctx.fillText(T.SHARE.card_source.toUpperCase(), x, y);
 
-    // Заголовок
-    y += 96;
-    ctx.fillStyle = CARD.ink; ctx.font = '700 60px ' + CARD.display;
-    wrapText(ctx, T.SHARE.card_title, contentW).forEach(line => { ctx.fillText(line, x, y); y += 76; });
+    // Заголовок: найбільший розмір, при якому він іде в один рядок; інакше — два рядки
+    y += 70;
+    let titleSize = 0;
+    for (const size of [50, 46, 42, 38]) {
+      ctx.font = '700 ' + size + 'px ' + CARD.display;
+      if (ctx.measureText(T.SHARE.card_title).width <= contentW) { titleSize = size; break; }
+    }
+    ctx.fillStyle = CARD.ink;
+    if (titleSize) { ctx.fillText(T.SHARE.card_title, x, y); }
+    else {
+      ctx.font = '700 46px ' + CARD.display;
+      wrapText(ctx, T.SHARE.card_title, contentW).forEach((line, i) => { if (i) y += 56; ctx.fillText(line, x, y); });
+    }
 
     // Обрані ознаки — «таблетки»
-    y += 6;
+    y += 30;
     const chips = [T.SUBJECT_NAME[r.subject].replace(/^./, c => c.toUpperCase()), T.SHARE.card_gender[r.gender], T.SHARE.card_escs[r.escs]];
     if (r.track && r.track !== 'all') chips.push(T.CALC.track_options[r.track]);
-    ctx.font = '600 32px ' + CARD.body;
+    ctx.font = '600 28px ' + CARD.body;
     let cx = x, cy = y;
     chips.forEach(label => {
-      const w = ctx.measureText(label).width + 52;
-      if (cx + w > x + contentW) { cx = x; cy += 76; }
-      ctx.fillStyle = CARD.chip; roundRect(ctx, cx, cy, w, 60, 30); ctx.fill();
-      ctx.fillStyle = CARD.ink; ctx.fillText(label, cx + 26, cy + 41);
-      cx += w + 14;
+      const w = Math.min(contentW, ctx.measureText(label).width + 44);
+      if (cx + w > x + contentW) { cx = x; cy += 68; }
+      ctx.fillStyle = CARD.chip; roundRect(ctx, cx, cy, w, 54, 27); ctx.fill();
+      ctx.fillStyle = CARD.ink; ctx.fillText(label, cx + 22, cy + 37);
+      cx += w + 12;
     });
-    y = cy + 60;
+    y = cy + 54 + 24;
 
-    // Велика цифра і діапазон («39% (35–44%)»)
+    // Велика цифра; підпис і діапазон — праворуч від неї, якщо вистачає місця («39% (35–44%)»)
     if (r.enoughData) {
-      y += 220;
-      ctx.fillStyle = CARD.colors.group; ctx.font = '700 210px ' + CARD.display;
-      ctx.fillText(Math.round(r.percent) + '%', x - 8, y);
-      y += 62;
-      ctx.fillStyle = CARD.muted; ctx.font = '500 42px ' + CARD.body;
-      ctx.fillText('(' + Math.round(r.low) + '–' + Math.round(r.high) + '%)', x, y);
-      y += 62;
-      ctx.fillStyle = CARD.ink; ctx.font = '600 40px ' + CARD.body;
-      wrapText(ctx, T.SHARE.card_reach, contentW).forEach(line => { ctx.fillText(line, x, y); y += 52; });
+      const num = Math.round(r.percent) + '%';
+      ctx.font = '700 180px ' + CARD.display;
+      const numW = ctx.measureText(num).width;
+      const top = y, base = top + 160;
+      ctx.fillStyle = CARD.colors.group; ctx.fillText(num, x - 6, base);
+      const colX = x + numW + 32, colW = x + contentW - colX, side = colW >= 300;
+      const capX = side ? colX : x, capW = side ? colW : contentW;
+      let capY = side ? top + 50 : base + 50;
+      ctx.fillStyle = CARD.muted; ctx.font = '500 34px ' + CARD.body;
+      ctx.fillText('(' + Math.round(r.low) + '–' + Math.round(r.high) + '%)', capX, capY);
+      capY += 44;
+      ctx.fillStyle = CARD.ink; ctx.font = '600 30px ' + CARD.body;
+      wrapText(ctx, T.SHARE.card_reach, capW).forEach(line => { ctx.fillText(line, capX, capY); capY += 40; });
+      y = Math.max(base + 20, capY);
     } else {
-      y += 150;
-      ctx.fillStyle = CARD.ink2; ctx.font = '700 90px ' + CARD.display;
+      y += 90;
+      ctx.fillStyle = CARD.ink2; ctx.font = '700 72px ' + CARD.display;
       ctx.fillText(T.CALC.no_data, x, y);
-      y += 70;
-      ctx.font = '500 36px ' + CARD.body;
-      wrapText(ctx, T.CALC.no_data_explain, contentW).forEach(line => { ctx.fillText(line, x, y); y += 48; });
+      y += 52;
+      ctx.font = '500 30px ' + CARD.body;
+      wrapText(ctx, T.CALC.no_data_explain, contentW).forEach(line => { ctx.fillText(line, x, y); y += 40; });
     }
     if (r.track && r.track !== 'all') {
-      ctx.fillStyle = CARD.muted; ctx.font = '500 32px ' + CARD.body;
-      ctx.fillText(T.CALC.track_note, x, y + 4); y += 48;
+      ctx.fillStyle = CARD.muted; ctx.font = '500 26px ' + CARD.body;
+      ctx.fillText(T.CALC.track_note, x, y + 4); y += 40;
     }
 
-    // Шкала порівняння: діапазон групи і три позначки
-    y += 48;
+    // Шкала порівняння: діапазон групи і три позначки (як на сайті)
+    y += 44;
     const X = v => x + contentW * Math.min(100, Math.max(0, v)) / 100;
-    ctx.fillStyle = CARD.track; roundRect(ctx, x, y - 12, contentW, 24, 12); ctx.fill();
+    ctx.fillStyle = CARD.track; roundRect(ctx, x, y - 11, contentW, 22, 11); ctx.fill();
     if (r.enoughData) {
       ctx.globalAlpha = 0.28; ctx.fillStyle = CARD.colors.group;
-      roundRect(ctx, X(r.low), y - 12, Math.max(24, X(r.high) - X(r.low)), 24, 12); ctx.fill();
+      roundRect(ctx, X(r.low), y - 11, Math.max(22, X(r.high) - X(r.low)), 22, 11); ctx.fill();
       ctx.globalAlpha = 1;
     }
-    // Порядок як на сайті: твоя група, усі учні України, середнє ОЕСР
     const points = [
       { label: T.CALC.scale_group, value: r.percent, shape: 'circle', color: CARD.colors.group, show: r.enoughData },
       { label: T.CALC.scale_ukraine, value: r.ukraine, shape: 'diamond', color: CARD.colors.ukraine, show: true },
       { label: T.CALC.scale_oecd, value: r.oecd, shape: 'square', color: CARD.colors.oecd, show: true },
     ].filter(p => p.show);
-    points.slice().reverse().forEach(p => marker(ctx, p.shape, X(p.value), y, p.shape === 'circle' ? 46 : 38, p.color, 6)); // група — поверх інших
-    y += 56;
-    ctx.fillStyle = CARD.muted; ctx.font = '500 28px ' + CARD.body;
+    points.slice().reverse().forEach(p => marker(ctx, p.shape, X(p.value), y, p.shape === 'circle' ? 42 : 34, p.color, 5)); // група — поверх інших
+    y += 46;
+    ctx.fillStyle = CARD.muted; ctx.font = '500 24px ' + CARD.body;
     ctx.fillText('0%', x, y); ctx.textAlign = 'center'; ctx.fillText('50%', x + contentW / 2, y);
     ctx.textAlign = 'right'; ctx.fillText('100%', x + contentW, y); ctx.textAlign = 'left';
 
     // Легенда з тими самими формами
-    y += 24;
+    y += 8;
     points.forEach(p => {
-      y += 52;
-      marker(ctx, p.shape, x + 14, y - 12, 24, p.color, 0);
-      ctx.fillStyle = CARD.ink2; ctx.font = '500 34px ' + CARD.body; ctx.fillText(p.label, x + 46, y);
-      ctx.fillStyle = CARD.ink; ctx.font = '700 34px ' + CARD.body; ctx.textAlign = 'right';
+      y += 42;
+      marker(ctx, p.shape, x + 12, y - 10, 20, p.color, 0);
+      ctx.fillStyle = CARD.ink2; ctx.font = '500 28px ' + CARD.body; ctx.fillText(p.label, x + 40, y);
+      ctx.fillStyle = CARD.ink; ctx.font = '700 28px ' + CARD.body; ctx.textAlign = 'right';
       ctx.fillText(Math.round(p.value) + '%', x + contentW, y); ctx.textAlign = 'left';
     });
 
     // Різниця з Україною (те саме речення, що на сайті)
     if (r.diff) {
-      y += 60;
-      ctx.fillStyle = CARD.ink; ctx.font = '600 34px ' + CARD.body;
-      wrapText(ctx, r.diff, contentW).forEach((line, i) => { if (i) y += 46; ctx.fillText(line, x, y); });
+      y += 50;
+      ctx.fillStyle = CARD.ink; ctx.font = '600 28px ' + CARD.body;
+      wrapText(ctx, r.diff, contentW).forEach((line, i) => { if (i) y += 38; ctx.fillText(line, x, y); });
     }
 
-    // Що це означає (текст частини 3; обрізаємо, якщо не вміщається)
-    y += 70;
-    ctx.fillStyle = CARD.ink; ctx.font = '700 38px ' + CARD.display; ctx.fillText(T.SHARE.card_meaning, x, y);
-    y += 10;
-    ctx.fillStyle = CARD.ink2; ctx.font = '400 32px ' + CARD.body;
-    let lines = wrapText(ctx, r.meaning || '', contentW);
-    const maxLines = Math.min(CARD.maxMeaningLines, Math.max(2, Math.floor((H - 190 - y) / 46)));
-    if (lines.length > maxLines) {
-      lines = lines.slice(0, maxLines);
-      let last = lines[lines.length - 1].replace(/[\s.,;:]*$/, '');
-      while (last.indexOf(' ') !== -1 && ctx.measureText(last + '…').width > contentW) last = last.slice(0, last.lastIndexOf(' ')).replace(/[\s.,;:]*$/, '');
-      lines[lines.length - 1] = last + '…';
-    }
-    lines.forEach(line => { y += 46; ctx.fillText(line, x, y); });
+    // Що це означає: текст підбирається під вільне місце
+    y += 58;
+    ctx.fillStyle = CARD.ink; ctx.font = '700 32px ' + CARD.display; ctx.fillText(T.SHARE.card_meaning, x, y);
+    y += 6;
+    const fit = fitText(ctx, r.meaning || '', contentW, (H - 126) - y - 8, '400', CARD.body);
+    ctx.fillStyle = CARD.ink2; ctx.font = '400 ' + fit.size + 'px ' + CARD.body;
+    fit.lines.forEach(line => { y += fit.step; ctx.fillText(line, x, y); });
 
-    // Низ: застереження. Адреси сайту на картці немає — посилання йде текстом разом із картинкою (версія 3 учасниці).
-    ctx.fillStyle = CARD.muted; ctx.font = '400 28px ' + CARD.body;
-    ctx.fillText(T.SHARE.card_disclaimer, x, H - 130);
+    // Низ: застереження (адреси сайту немає — посилання йде текстом разом із картинкою)
+    ctx.fillStyle = CARD.muted; ctx.font = '400 24px ' + CARD.body;
+    ctx.fillText(T.SHARE.card_disclaimer, x, H - 78);
     return canvas;
   }
 

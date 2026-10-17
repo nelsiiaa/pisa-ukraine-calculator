@@ -1,4 +1,4 @@
-/* Частина 5. Переклад різниці в середніх балах двох груп у приблизні роки навчання.
+/* Частина 5. Розрив між двома групами в середніх балах з орієнтиром ОЕСР (без переведення в роки — див. YEARS у texts.js).
  * Різниця = mean_score групи A − mean_score групи B (поле diff_vs_ukraine не використовується).
  * Функції ніколи не кидають виняток. */
 (function (root, factory) {
@@ -9,22 +9,9 @@
 
   const Y = T.YEARS;
   const ERROR = () => ({ situation: 'error', sentences: [] });
+  // Різниця менша за чверть річного приросту (20 / 4 = 5 балів) — «майже не відрізняються».
+  const TINY_POINTS = Y.POINTS_PER_YEAR / 4;
   const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)).replace(/,(\s*[,.])/g, '$1');
-
-  /** Кількість років навчання для різниці в балах. */
-  function yearsFromPoints(points) {
-    const p = C.toNumber(points);
-    return Number.isFinite(p) ? Math.abs(p) / Y.POINTS_PER_YEAR : NaN;
-  }
-
-  /** Округлення до 0,5 «половина вгору» і мовна форма; null, якщо округлене значення 0. */
-  function formatYears(years) {
-    if (!Number.isFinite(years)) return null;
-    const r = Math.floor(Math.abs(years) * 2 + 0.5) / 2;
-    if (r === 0) return null;
-    if (r > 5) return Y.OVER_FIVE;
-    return Y.FORMS[r] || null;
-  }
 
   /** «у» або «в» перед підписом групи: «в усіх дівчат», «у дівчат з…». */
   function prepFor(label) {
@@ -52,7 +39,7 @@
       if (!Number.isFinite(ma) || !Number.isFinite(mb)) return ERROR();
       const gap = ma - mb;
 
-      if (Math.abs(gap) < 5) {
+      if (Math.abs(gap) < TINY_POINTS) {
         const sentences = Y.TINY.map(s => fill(s, { subject_from, prep: prepFor(la), group_a: la, prep2: prepFor(lb), group_b: lb }));
         return { situation: 'tiny', sentences };
       }
@@ -60,7 +47,6 @@
       const points = C.roundHalfUp(Math.abs(gap));
       const sentences = Y.GAP.map(s => fill(s, {
         subject_from, prep: prepFor(high), group_high: high, prep2: prepFor(low), group_low: low,
-        years_text: formatYears(yearsFromPoints(gap)),
         points: points + ' ' + C.pointsWord(points),
         points_per_year: Y.POINTS_PER_YEAR,
       }));
@@ -71,5 +57,5 @@
     }
   }
 
-  return { yearsFromPoints, formatYears, buildGapText, prepFor };
+  return { buildGapText, prepFor, TINY_POINTS };
 });

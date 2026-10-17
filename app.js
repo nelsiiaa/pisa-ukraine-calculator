@@ -12,6 +12,9 @@
   const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
   const int = x => C.roundHalfUp(x);
   const $ = id => document.getElementById(id);
+  // Версія збірки (з index.html): додається до адрес даних, щоб браузер не змішував старі й нові файли з кешу.
+  const VERSION = (document.querySelector('[data-version]') || {}).dataset?.version || '';
+  const v = path => path + (VERSION ? '?v=' + VERSION : '');
 
   const form = $('calc-form'), showBtn = $('show-btn'), formHint = $('form-hint'), result = $('result'), quiz = $('quiz');
   let quizSkippedByLink = false;
@@ -166,8 +169,9 @@
     LAST = { subject, gender, escs, track, enoughData: row.enough_data, percent: row.pct_level2, low: row.ci_low, high: row.ci_high,
       ukraine: ukraine.pct_level2, oecd: K.OECD_PCT[subject],
       diff: row.enough_data ? K.diffSentence(row, ukraine) : '',
-      // На картку — речення про групу (застереження вже є внизу картки, визначення рівня не вміщається)
-      meaning: (it => (it.sentences.length === 3 ? [it.sentences[1]] : it.sentences).join(' '))(window.PisaInterpretation.buildInterpretation(row)) };
+      // На картку: спершу речення про групу, потім визначення рівня (застереження вже є внизу картки).
+      // Якщо не вміщається, картка прибирає цілі речення з кінця — найважливіше лишається.
+      meaning: (it => (it.sentences.length === 3 ? [it.sentences[1], it.sentences[0]] : it.sentences).join(' '))(window.PisaInterpretation.buildInterpretation(row)) };
     form.hidden = true;
     renderMain(subject, gender, escs, track, row);
     renderMeaning(row, subject);
@@ -263,12 +267,12 @@
   $('scale-caption').textContent = T.CALC.scale_caption;
 
   // Модель для помічника необов'язкова: якщо не завантажилась, помічник просто не показується.
-  fetch('data/escs_model.json').then(r => (r.ok ? r.json() : null)).then(m => { if (m) setupEscsHelper(m); }).catch(() => {});
+  fetch(v('data/escs_model.json')).then(r => (r.ok ? r.json() : null)).then(m => { if (m) setupEscsHelper(m); }).catch(() => {});
 
   // Банк завдань «Перевір себе»; якщо не завантажився — тест пропускається, калькулятор працює.
-  const quizBank = fetch('data/quiz_bank.json').then(r => (r.ok ? r.json() : [])).catch(() => []);
+  const quizBank = fetch(v('data/quiz_bank.json')).then(r => (r.ok ? r.json() : [])).catch(() => []);
 
-  Promise.all([fetch('data/pisa_ukraine_calculator.csv').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }), quizBank])
+  Promise.all([fetch(v('data/pisa_ukraine_calculator.csv')).then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }), quizBank])
     .then(([text, bank]) => {
       ROWS = K.parseCsv(text);
       setupTrackField();

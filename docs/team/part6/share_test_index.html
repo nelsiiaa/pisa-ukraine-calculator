@@ -70,7 +70,7 @@
     <!-- ===== ДВІ КНОПКИ, ЯКІ ПІДКЛЮЧАЄ share.js ===== -->
     <div class="share">
       <button id="btn-link" type="button">Скопіювати посилання</button>
-      <button id="btn-image" type="button">Зберегти картинку</button>
+      <button id="btn-image" type="button">Поділитись посиланням та картинкою результатів</button>
     </div>
     <div id="share-status" role="status"></div>
   </div>
@@ -130,6 +130,7 @@
     linkButton: "#btn-link",
     imageButton: "#btn-image",
     statusEl: "#share-status",
+    extraParams: ["track"], // додаткові параметри сайту, які теж читаємо з посилання (наприклад, ?track=general)
     // 1) Віддаємо модулю те, що зараз показано на екрані. Якщо нічого не показано, віддаємо null.
     getResult: function () { return current; },
     // 2) Якщо сторінку відкрили за чужим посиланням: підставляємо вибір у форму й показуємо результат.
