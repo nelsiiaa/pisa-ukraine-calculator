@@ -30,10 +30,12 @@
     showBtn.disabled = !ready;
     formHint.hidden = ready;
   }
+  // Тест і кнопка «Пропустити» (вона стоїть у шапці) ховаються разом.
+  function hideQuiz() { quiz.hidden = true; $('quiz-skip').hidden = true; }
   // Повернення до форми. Вибір зберігається; щоб скидати його, додайте сюди рядок: form.reset(); updateButton();
   function openCalculator() {
     const fromResult = !result.hidden;
-    quiz.hidden = true;
+    hideQuiz();
     result.hidden = true;
     form.hidden = false;
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -249,7 +251,7 @@
           if (input) input.checked = true;
         }
         quizSkippedByLink = true;
-        quiz.hidden = true;
+        hideQuiz();
         updateButton();
         show(state);
       },
