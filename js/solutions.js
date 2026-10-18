@@ -28,9 +28,8 @@
 
       const subject = C.field(row, 'subject'), gender = C.field(row, 'gender'), escs = C.field(row, 'escs');
       const out = [];
-      // Шар A: стать + предмет — завжди рівно один напрям.
+      // Шар A: стать + предмет — завжди рівно один напрям (дівчата + математика → subject_general_math).
       if (gender === 'male' && subject === 'read') out.push('read_boys');
-      else if (gender === 'female' && subject === 'math') out.push('math_girls');
       else out.push('subject_general_' + subject);
       // Шар B: нижче соціально-економічне становище.
       if (escs === 'low') out.push('targeted_support');

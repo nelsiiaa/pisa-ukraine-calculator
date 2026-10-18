@@ -70,7 +70,7 @@ test('ч.4: для 36 комбінацій і кожної ситуації 2–
 test('ч.4: шар A — стать + предмет', () => {
   const a = (s, g) => buildSolutions(row({ subject: s, gender: g, vs_ukraine: 'about', escs: 'mid' })).directions[0];
   assert.equal(a('read', 'male'), 'read_boys');
-  assert.equal(a('math', 'female'), 'math_girls');
+  assert.equal(a('math', 'female'), 'subject_general_math');
   assert.equal(a('read', 'female'), 'subject_general_read');
   assert.equal(a('math', 'male'), 'subject_general_math');
   for (const s of SUBJECTS) assert.equal(a(s, 'all'), 'subject_general_' + s);
@@ -103,8 +103,12 @@ test('ч.4: тексти напрямів без заборонених слів
     assert.doesNotMatch(t.replace(/15-річн/g, ''), /[0-9%]/, d.id);
   }
 });
-test('ч.4: missingSources() повертає всі 8 id, поки джерела не заповнені', () => {
-  assert.equal(missingSources().length, 8);
+test('ч.4: у всіх 7 напрямів заповнені джерела; math_girls немає', () => {
+  assert.deepEqual(missingSources(), []);
+  assert.equal(Object.keys(T.DIRECTIONS).length, 7);
+  assert.ok(!('math_girls' in T.DIRECTIONS));
+  for (const s of SUBJECTS) for (const g of GENDERS) for (const e of ESCS) for (const v of ['above', 'about', 'below'])
+    for (const id of buildSolutions(row({ subject: s, gender: g, escs: e, vs_ukraine: v })).directions) assert.ok(T.DIRECTIONS[id], id);
 });
 
 // ---------------- Частина 5: розрив у балах з орієнтиром ОЕСР (без переведення в роки)
