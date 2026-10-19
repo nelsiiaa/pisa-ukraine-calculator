@@ -193,6 +193,7 @@
   $('quiz-skip').addEventListener('click', openCalculator);
   $('quiz-disclaimer').textContent = T.QUIZ.DISCLAIMER;
   $('license').textContent = T.QUIZ.LICENSE;
+  $('adult-hint').textContent = T.CALC.adult_hint;
   $('escs-hint').textContent = T.CALC.escs_hint;
   $('escs-helper-summary').textContent = T.CALC.escs_helper_summary;
   $('escs-helper-intro').textContent = T.CALC.escs_helper_intro;
